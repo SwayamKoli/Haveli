@@ -12,7 +12,7 @@
     "build:demo": "vite build --mode demo --outDir dist-demo",
     "start": "tsx server/start.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
-    "test": "tsx --test tests/rules.test.ts tests/api.test.ts",
+    "test": "tsx --test tests/rules.test.ts tests/api.test.ts tests/dotenv.test.ts",
     "check": "npm run typecheck && npm test"
   },
   "dependencies": {

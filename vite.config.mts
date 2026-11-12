@@ -1,6 +1,8 @@
-import { defineConfig, loadEnv } from 'vite';
+import { resolve } from 'node:path';
+import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { loadDotEnv } from './server/dotenv';
 
 /**
  * In development the same Vite server also answers /api, using the real
@@ -26,10 +28,9 @@ function apiDuringDev(): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   // Make everything in .env visible to the API code (not to the browser).
-  const env = loadEnv(mode, process.cwd(), '');
-  for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) process.env[k] = v;
+  loadDotEnv(resolve(process.cwd(), '.env'));
 
   return {
     plugins: [react(), apiDuringDev()],

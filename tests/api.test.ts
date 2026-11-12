@@ -271,3 +271,26 @@ describe('connection check', () => {
     assert.match(bad.body.checks.find((c: { name: string }) => c.name === 'Tabs').detail, /Bookings/);
   });
 });
+
+describe('two people saving at once', () => {
+  it('never double-books a room', async () => {
+    const [a, b] = await Promise.all([
+      call('booking-create', { cookie, body: newBooking({ name: 'First Guest', mobile: '9000000001' }) }),
+      call('booking-create', { cookie, body: newBooking({ name: 'Second Guest', mobile: '9000000002' }) }),
+    ]);
+    assert.deepEqual([a.status, b.status].sort(), [200, 422]);
+    assert.equal([a, b].filter((r) => r.status === 200).length, 1);
+    assert.equal(g.rows('Bookings').length, 1);
+  });
+
+  it('gives different booking IDs to bookings made at the same moment', async () => {
+    const [a, b] = await Promise.all([
+      call('booking-create', { cookie, body: newBooking({ name: 'First Guest', mobile: '9000000001', room: 101 }) }),
+      call('booking-create', { cookie, body: newBooking({ name: 'Second Guest', mobile: '9000000002', room: 102 }) }),
+    ]);
+    assert.equal(a.status, 200);
+    assert.equal(b.status, 200);
+    const ids = g.rows('Bookings').map((r) => r[0]);
+    assert.equal(new Set(ids).size, 2);
+  });
+});

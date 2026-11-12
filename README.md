@@ -29,8 +29,8 @@ The app signs in to Google as a small robot account (a "service account"). You g
 
 1. Copy `.env.example` to a new file called `.env` (same folder).
 2. **SHEET_ID**: paste the sheet's address from the browser, or just the long id between `/d/` and `/edit`.
-3. **GOOGLE_SERVICE_ACCOUNT_JSON**: open the downloaded JSON, select everything, and paste it after the `=` on **one line** inside single quotes:
-   `GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account", ... }'`
+3. **GOOGLE_SERVICE_ACCOUNT_JSON**: open the downloaded JSON file in a text editor, select everything, and paste it after the `=` inside single quotes, exactly as it is (it may span many lines, that is fine):
+   `GOOGLE_SERVICE_ACCOUNT_JSON='{ ... the whole file ... }'`
 4. **APP_PASSWORD**: the password staff will type to sign in (8+ characters).
 5. **SESSION_SECRET**: any long random text (24+ characters). To make one: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 
@@ -61,6 +61,7 @@ The app checks the sheet every 45 seconds, so edits made directly in Google Shee
 - **Double booking** is blocked: a room cannot be booked for dates that overlap an active booking.
 - **Payments** are separate from stages: use `…` → *Record payment*. Checking out does not mark anything as paid.
 - **Undo** appears after a stage change.
+- **Two people at once:** saves are queued, so two staff members booking the same room at the same moment cannot both succeed. Run only one copy of the app against a sheet.
 - **Safety:** one shared password, login attempts are rate-limited, the session cookie is HttpOnly, and every change request carries an anti-forgery header. Text typed into the app is stored as plain text in the sheet, so a guest named `=HYPERLINK(...)` cannot run as a formula.
 
 ## 6. Sheet columns
@@ -89,7 +90,7 @@ npm run build   # if you use npm start
 ## 8. Checks
 
 ```bash
-npm test             # 47 tests of the rules and the Google Sheets handling (no internet needed)
+npm test             # 52 tests of the rules and the Google Sheets handling (no internet needed)
 npm run typecheck    # TypeScript check of the whole project
 ```
 

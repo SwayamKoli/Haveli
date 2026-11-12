@@ -374,7 +374,7 @@ function bookingFormulas(s: Sheet<BookingKey>, row: number): CellWrite[] {
 
 /* ---------- actions ---------- */
 
-export async function createBooking(input: NewBookingInput) {
+async function createBookingNow(input: NewBookingInput) {
   const L = await loadAll();
   const errors = validateNewBooking(input, { rooms: L.rooms, bookings: L.bookings, today: L.today });
   if (Object.keys(errors).length) throw new HttpError(422, 'Please fix the highlighted fields.', errors);
@@ -464,7 +464,7 @@ export async function createBooking(input: NewBookingInput) {
   return { booking, guest, guestCreated };
 }
 
-export async function changeStage(id: string, to: Stage, restore?: RoomManual) {
+async function changeStageNow(id: string, to: Stage, restore?: RoomManual) {
   const L = await loadAll();
   const b = L.bookings.find((x) => x.id === id);
   if (!b) throw new HttpError(404, 'That booking was not found. Refresh and try again.');
@@ -482,7 +482,7 @@ export async function changeStage(id: string, to: Stage, restore?: RoomManual) {
   return { booking: { ...pub(b), stage: to, updatedAt: L.stamp } as Booking, room: newRoom };
 }
 
-export async function changeRoomStatus(no: number, to: RoomManual) {
+async function changeRoomStatusNow(no: number, to: RoomManual) {
   const L = await loadAll();
   const room = L.rooms.find((r) => r.no === no);
   if (!room) throw new HttpError(404, 'That room was not found. Refresh and try again.');
@@ -492,7 +492,7 @@ export async function changeRoomStatus(no: number, to: RoomManual) {
   return { room: { ...pub(room), manual: to } as Room };
 }
 
-export async function addRoom(input: NewRoomInput) {
+async function addRoomNow(input: NewRoomInput) {
   const L = await loadAll();
   const knownTypes = Array.from(new Set([...L.rooms.map((r) => r.type), ...Object.keys(TYPE_DEFAULTS)]));
   const errors = validateNewRoom(input, L.rooms, knownTypes);
@@ -513,7 +513,7 @@ export async function addRoom(input: NewRoomInput) {
   return { room };
 }
 
-export async function collectPayment(id: string, amount: number) {
+async function collectPaymentNow(id: string, amount: number) {
   const L = await loadAll();
   const b = L.bookings.find((x) => x.id === id);
   if (!b) throw new HttpError(404, 'That booking was not found. Refresh and try again.');
@@ -605,3 +605,21 @@ export async function health(): Promise<HealthReport> {
   report.ok = checks.every((c) => c.ok);
   return report;
 }
+
+/**
+ * Writes run one at a time. Two people saving at the same moment would otherwise both
+ * read the sheet before either wrote, so a room could be double-booked or an ID reused.
+ * (This guards one running copy of the app, which is how it is meant to be used.)
+ */
+let writeTail: Promise<unknown> = Promise.resolve();
+function exclusive<T>(job: () => Promise<T>): Promise<T> {
+  const run = writeTail.then(job, job);
+  writeTail = run.catch(() => undefined);
+  return run;
+}
+
+export const createBooking = (...a: Parameters<typeof createBookingNow>) => exclusive(() => createBookingNow(...a));
+export const changeStage = (...a: Parameters<typeof changeStageNow>) => exclusive(() => changeStageNow(...a));
+export const changeRoomStatus = (...a: Parameters<typeof changeRoomStatusNow>) => exclusive(() => changeRoomStatusNow(...a));
+export const addRoom = (...a: Parameters<typeof addRoomNow>) => exclusive(() => addRoomNow(...a));
+export const collectPayment = (...a: Parameters<typeof collectPaymentNow>) => exclusive(() => collectPaymentNow(...a));

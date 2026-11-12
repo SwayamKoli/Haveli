@@ -9,6 +9,7 @@ import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { handleApi } from './adapt';
+import { loadDotEnv } from './dotenv';
 
 loadDotEnv(resolve(process.cwd(), '.env'));
 
@@ -27,18 +28,6 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
   '.map': 'application/json',
 };
-
-/** Minimal .env reader so no extra package is needed. Real environment variables win. */
-function loadDotEnv(file: string): void {
-  if (!existsSync(file)) return;
-  for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
-    if (!m || line.trim().startsWith('#')) continue;
-    let v = m[2];
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    if (process.env[m[1]] === undefined) process.env[m[1]] = v;
-  }
-}
 
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error('There is no dist/ folder yet. Run "npm run build" first, then "npm start".');
