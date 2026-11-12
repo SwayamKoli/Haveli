@@ -1,0 +1,32 @@
+{
+  "name": "haveli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hotel management dashboard backed by Google Sheets",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "vite",
+    "dev:demo": "vite --mode demo",
+    "build": "vite build",
+    "build:demo": "vite build --mode demo --outDir dist-demo",
+    "start": "tsx server/start.ts",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
+    "test": "tsx --test tests/rules.test.ts tests/api.test.ts",
+    "check": "npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}

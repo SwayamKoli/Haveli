@@ -1,0 +1,12 @@
+/* Additions on top of the design in styles.css: sign-in, loading and error screens. */
+.login-wrap,.splash{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:5}
+.login-card{width:min(420px,100%);overflow:visible}
+.login-card .logo{display:flex;align-items:center;gap:10px}
+.login-card .logo i{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:linear-gradient(180deg,#58b0d4,#3b8fb3);color:#04202b;font-size:20px}
+.splash{text-align:center;color:var(--muted);align-content:center;gap:12px;grid-auto-rows:min-content}
+.splash h2{color:var(--text);font-weight:400;font-size:24px}
+.splash p{max-width:440px;line-height:1.6}
+.form.bad .err{color:var(--bad)}
+.form.bad input{border-color:var(--bad)}
+.btn[disabled]{opacity:.55;cursor:default;transform:none}
+a.btn{text-decoration:none}

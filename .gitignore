@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-demo/
+.env
+.env.*
+!.env.example
+!.env.demo
+*.pem
+*-key.json
+service-account*.json
+*.log
+.DS_Store
