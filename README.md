@@ -99,6 +99,7 @@ npm run typecheck    # TypeScript check of the whole project
 | You see | Do this |
 |---|---|
 | "The server is not set up yet" | The listed names in `.env` are empty or wrong. Restart after editing `.env`. |
+| "GOOGLE_SERVICE_ACCOUNT_JSON (not valid JSON)" | The key is cut off or is the wrong file. Open the downloaded key file, copy **everything** from the first `{` to the last `}`, and paste it inside single quotes. Then restart. |
 | "Share the sheet with …" | Step 2.6: share the sheet with the service account email as **Editor**. |
 | "no tab called …" | Rename the tab exactly: Rooms, Guests, Bookings. |
 | "Sheet not found" | `SHEET_ID` is wrong. |

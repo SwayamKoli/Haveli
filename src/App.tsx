@@ -58,7 +58,12 @@ function Login({ backend, session, onSignedIn }: { backend: Backend; session: Se
             <ul style={{ margin: '8px 0 0 18px' }}>
               {session.missing.map((m) => <li key={m}>{m}</li>)}
             </ul>
-            <p style={{ color: 'var(--muted)', marginTop: 10 }}>Then restart the app. README.md explains each one.</p>
+            {session.missing.some((m) => m.includes('not valid JSON')) && (
+              <p style={{ color: 'var(--muted)', marginTop: 10 }}>
+                The key must be the <b>whole</b> downloaded .json file, starting with <b>{'{'}</b> and ending with <b>{'}'}</b>, pasted inside single quotes.
+              </p>
+            )}
+            <p style={{ color: 'var(--muted)', marginTop: 10 }}>Then stop the app (Ctrl+C) and start it again. README.md explains each one.</p>
           </div>
         ) : (
           <>
