@@ -1,7 +1,7 @@
 import { SOURCES, STAGES, STAGE_LABEL } from '../../shared/constants';
 import type { ReactNode } from 'react';
 import { inr } from '../lib/format';
-import { counts, revenueSeries, roomState } from '../lib/selectors';
+import { collectionSeries, counts, outstanding, roomState } from '../lib/selectors';
 import { useStore } from '../store';
 import { HBars, LineChart, PageHead } from '../ui';
 
@@ -23,11 +23,18 @@ export function Analytics() {
   const c = counts(data);
   const occ = rooms.length ? c.occupied / rooms.length : 0;
   const inHouse = bookings.filter((b) => b.stage === 'in');
-  const adr = inHouse.length ? inHouse.reduce((s, b) => s + b.price, 0) / inHouse.length : 0;
+  const occupied = inHouse.reduce((s, b) => s + b.rooms.length, 0);
+  const adr = occupied ? inHouse.reduce((s, b) => s + b.price, 0) / occupied : 0;
   const live = bookings.filter((b) => b.stage !== 'cancelled');
   const stay = live.length ? live.reduce((s, b) => s + b.nights, 0) / live.length : 0;
-  const series = revenueSeries(data, 30);
+  const series = collectionSeries(data, 30);
   const month = series.vals.reduce((a, b) => a + b, 0);
+  const methods = Array.from(new Set(data.payments.map((p) => p.method)));
+  const byMethod = methods
+    .map((m) => ({ l: m, v: data.payments.filter((p) => p.method === m).reduce((s, p) => s + p.amount, 0) }))
+    .sort((a, b) => b.v - a.v)
+    .map((i) => ({ ...i, t: inr(i.v) }));
+  const discounts = live.reduce((s, b) => s + b.discount, 0);
 
   const sources = Array.from(new Set([...SOURCES, ...live.map((b) => b.source)]));
   const bySource = sources
@@ -53,9 +60,9 @@ export function Analytics() {
         <span className="chip acc" style={{ height: 32, padding: '0 14px', fontSize: 12.5, borderRadius: 16 }}>Last 30 days</span>
       </PageHead>
       <div className="grid g4">
-        <Stat title="Revenue (30 days)" hi foot={<span className="chip good">Room revenue</span>}>{inr(month)}</Stat>
-        <Stat title="Average daily rate" foot={<span>Per occupied room tonight</span>}>{inr(adr)}</Stat>
-        <Stat title="Revenue per room" foot={<span>ADR × occupancy</span>}>{inr(adr * occ)}</Stat>
+        <Stat title="Money received (30 days)" hi foot={<span className="chip good">{inr(outstanding(data))} still to collect</span>}>{inr(month)}</Stat>
+        <Stat title="Average daily rate" foot={<span>Per occupied room tonight · {inr(adr * occ)} per room</span>}>{inr(adr)}</Stat>
+        <Stat title="Discounts given" foot={<span>On current bookings</span>}>{inr(discounts)}</Stat>
         <Stat title="Average stay" foot={<span>Across all bookings</span>}>
           {stay.toFixed(1)}
           <small> nights</small>
@@ -65,17 +72,17 @@ export function Analytics() {
         <section className="card anim">
           <div className="card-h">
             <div>
-              <h3>Daily room revenue</h3>
+              <h3>Money received each day</h3>
               <p className="sub">Hover to read a day</p>
             </div>
           </div>
-          <LineChart vals={series.vals} labels={series.labels} h={300} label="Daily room revenue, last 30 days" />
+          <LineChart vals={series.vals} labels={series.labels} h={300} label="Money received each day, last 30 days" />
         </section>
         <section className="card anim">
           <div className="card-h">
             <div>
-              <h3>Revenue by source</h3>
-              <p className="sub">All current bookings</p>
+              <h3>Billed by source</h3>
+              <p className="sub">All current bookings, after discounts</p>
             </div>
           </div>
           <HBars items={bySource} />
@@ -90,6 +97,15 @@ export function Analytics() {
             </div>
           </div>
           <HBars items={byType} />
+        </section>
+        <section className="card anim">
+          <div className="card-h">
+            <div>
+              <h3>Received by payment method</h3>
+              <p className="sub">All payments, refunds taken off</p>
+            </div>
+          </div>
+          {byMethod.length ? <HBars items={byMethod} /> : <p className="empty">No payments yet.</p>}
         </section>
         <section className="card anim">
           <div className="card-h">

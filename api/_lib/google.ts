@@ -76,11 +76,11 @@ async function explain(res: Response): Promise<HttpError> {
     return new HttpError(502, `Google says this account may not use the sheet. Share the sheet with ${saEmail} and give it Editor access.`);
   }
   if (res.status === 404) {
-    return new HttpError(502, 'Google could not find the sheet. Check SHEET_ID in the settings.');
+    return new HttpError(502, 'Google could not find the sheet. Check SHEET_ID in the .env file.');
   }
   if (res.status === 400 && /unable to parse range/i.test(message)) {
     const tab = /range:\s*([^\s,]+)/i.exec(message)?.[1] ?? 'a tab';
-    return new HttpError(502, `The sheet has no tab called "${tab}". Tabs must be named Rooms, Guests and Bookings.`);
+    return new HttpError(502, `The sheet has no tab called "${tab.replace(/[!'].*$/, '').replace(/^'/, '')}".`, undefined, 'NO_TAB');
   }
   if (res.status === 429) {
     return new HttpError(503, 'Google is limiting requests right now. Wait a few seconds and try again.');

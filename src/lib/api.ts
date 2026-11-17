@@ -1,30 +1,45 @@
 import type {
   Booking,
   DataBundle,
+  EditBookingInput,
   FieldErrors,
   Guest,
   HealthReport,
   NewBookingInput,
   NewRoomInput,
+  Payment,
   Room,
   RoomManual,
+  RoomsGenerateInput,
   SessionInfo,
   Stage,
+  StaffMember,
+  StaffSaveInput,
 } from '../../shared/types';
 
 /** Everything the screens need from "the server". The real one talks to the sheet; the demo one lives in memory. */
 export interface Backend {
   mode: 'live' | 'demo';
   session(): Promise<SessionInfo>;
-  login(password: string): Promise<SessionInfo>;
+  login(username: string, password: string): Promise<SessionInfo>;
   logout(): Promise<void>;
   load(): Promise<DataBundle>;
-  createBooking(input: NewBookingInput): Promise<{ booking: Booking; guest: Guest; guestCreated: boolean }>;
-  setStage(id: string, to: Stage, restore?: RoomManual): Promise<{ booking: Booking; room: Room | null }>;
+  createBooking(input: NewBookingInput): Promise<{ booking: Booking; guest: Guest; guestCreated: boolean; payment: Payment | null }>;
+  updateBooking(input: EditBookingInput): Promise<{ booking: Booking; guest: Guest; rooms: Room[] }>;
+  /** `rooms` lists the rooms whose status changed (for example, all of them go to Cleaning at check-out). */
+  setStage(id: string, to: Stage, restore?: Record<number, RoomManual>): Promise<{ booking: Booking; rooms: Room[] }>;
   setRoomStatus(no: number, status: RoomManual): Promise<{ room: Room }>;
   createRoom(input: NewRoomInput): Promise<{ room: Room }>;
-  recordPayment(id: string, amount: number): Promise<{ booking: Booking }>;
+  generateRooms(input: RoomsGenerateInput): Promise<{ added: number; skipped: number; rooms: Room[] }>;
+  /** A negative amount gives money back. */
+  recordPayment(id: string, amount: number, method: string, note: string): Promise<{ booking: Booking; payment: Payment }>;
+  /* owner only */
   health(): Promise<HealthReport>;
+  listStaff(): Promise<{ staff: StaffMember[] }>;
+  saveStaff(input: StaffSaveInput): Promise<{ staff: StaffMember[] }>;
+  setupSheet(): Promise<{ changes: string[] }>;
+  /** Asks for the owner password every time. The link is never sent to the browser otherwise. */
+  sheetLink(password: string): Promise<{ url: string }>;
 }
 
 export class ApiError extends Error {
@@ -64,19 +79,26 @@ async function call<T>(action: string, opts: { method?: 'GET' | 'POST'; body?: u
 }
 
 export function makeLiveBackend(): Backend {
+  const post = <T>(action: string, body?: unknown) => call<T>(action, { method: 'POST', body });
   return {
     mode: 'live',
     session: () => call<SessionInfo>('session'),
-    login: (password) => call<SessionInfo>('login', { method: 'POST', body: { password }, quiet401: true }),
+    login: (username, password) => call<SessionInfo>('login', { method: 'POST', body: { username, password }, quiet401: true }),
     logout: async () => {
-      await call('logout', { method: 'POST' });
+      await post('logout');
     },
     load: () => call<DataBundle>('data'),
-    createBooking: (input) => call('booking-create', { method: 'POST', body: input }),
-    setStage: (id, to, restore) => call('booking-stage', { method: 'POST', body: { id, to, restore } }),
-    setRoomStatus: (no, status) => call('room-status', { method: 'POST', body: { no, status } }),
-    createRoom: (input) => call('room-create', { method: 'POST', body: input }),
-    recordPayment: (id, amount) => call('booking-payment', { method: 'POST', body: { id, amount } }),
+    createBooking: (input) => post('booking-create', input),
+    updateBooking: (input) => post('booking-update', input),
+    setStage: (id, to, restore) => post('booking-stage', { id, to, restore }),
+    setRoomStatus: (no, status) => post('room-status', { no, status }),
+    createRoom: (input) => post('room-create', input),
+    generateRooms: (input) => post('rooms-generate', input),
+    recordPayment: (id, amount, method, note) => post('booking-payment', { id, amount, method, note }),
     health: () => call<HealthReport>('health'),
+    listStaff: () => call('staff-list'),
+    saveStaff: (input) => post('staff-save', input),
+    setupSheet: () => post('sheet-setup'),
+    sheetLink: (password) => call('sheet-link', { method: 'POST', body: { password }, quiet401: true }),
   };
 }

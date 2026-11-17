@@ -14,11 +14,20 @@ export const SHEET_ID = 'test-sheet-id';
 const HEADERS = {
   Rooms: ['Room ID', 'Room No', 'Floor', 'Type', 'Bed', 'Sleeps', 'Rate (₹/night)', 'Status', 'Notes', 'Updated at'],
   Guests: ['Guest ID', 'Name', 'Mobile', 'Email', 'ID type', 'ID last 4', 'City', 'Created at'],
+  /** The v0.1 layout: no Discount / Created by / Updated by yet. */
   Bookings: [
     'Booking ID', 'Guest ID', 'Guest name', 'Room No', 'Check-in', 'Check-out', 'Nights', 'Rate (₹/night)',
     'Total (₹)', 'Paid (₹)', 'Balance (₹)', 'Source', 'Stage', 'Guests', 'Expected arrival', 'Notes',
     'Created at', 'Updated at',
   ],
+  /** What "Set up sheet" produces. */
+  BookingsFull: [
+    'Booking ID', 'Guest ID', 'Guest name', 'Room No', 'Check-in', 'Check-out', 'Nights', 'Rate (₹/night)',
+    'Discount (₹)', 'Total (₹)', 'Paid (₹)', 'Balance (₹)', 'Source', 'Stage', 'Guests', 'Expected arrival', 'Notes',
+    'Created by', 'Updated by', 'Created at', 'Updated at',
+  ],
+  Payments: ['Payment ID', 'Booking ID', 'Date', 'Amount (₹)', 'Method', 'Received by', 'Note'],
+  Staff: ['Username', 'Name', 'Role', 'Password hash', 'Active', 'Created at'],
 } as const;
 
 function colIndex(letters: string): number {
@@ -36,8 +45,15 @@ export class FakeGoogle {
   tabs: Record<string, Cell[][]> = {
     Rooms: [[...HEADERS.Rooms]],
     Guests: [[...HEADERS.Guests]],
-    Bookings: [[...HEADERS.Bookings]],
+    Bookings: [[...HEADERS.BookingsFull]],
+    Payments: [[...HEADERS.Payments]],
+    Staff: [[...HEADERS.Staff]],
   };
+
+  /** An old (v0.1) sheet: three tabs, no discount or audit columns. */
+  makeOld(): void {
+    this.tabs = { Rooms: this.tabs.Rooms, Guests: this.tabs.Guests, Bookings: [[...HEADERS.Bookings]] };
+  }
   /** Formulas written by the app, keyed like "Bookings!G2". */
   formulas: Record<string, string> = {};
   calls: string[] = [];
@@ -126,6 +142,13 @@ export class FakeGoogle {
     const method = init.method ?? 'GET';
     const body = init.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
 
+    if (rest === ':batchUpdate' && method === 'POST') {
+      for (const r of (body.requests as { addSheet?: { properties: { title: string } } }[]) ?? []) {
+        const title = r.addSheet?.properties.title;
+        if (title) this.tabs[title] = [[]];
+      }
+      return this.json(200, { replies: [] });
+    }
     if (rest === '' && method === 'GET') {
       return this.json(200, {
         properties: { title: 'Haveli (test)' },
@@ -152,11 +175,16 @@ export class FakeGoogle {
     const append = /^\/values\/([^!]+)!A1:append$/.exec(rest);
     if (append && method === 'POST') {
       const tab = append[1];
-      const row = ((body.values as Cell[][])[0] ?? []).map((v) => this.parseInput(v, ''));
-      this.tabs[tab].push(row);
-      const n = this.tabs[tab].length;
-      const last = String.fromCharCode(65 + Math.max(0, row.length - 1));
-      return this.json(200, { updates: { updatedRange: `${tab}!A${n}:${last}${n}` } });
+      const incoming = (body.values as unknown[][]) ?? [];
+      const first = this.tabs[tab].length + 1;
+      let width = 1;
+      for (const raw of incoming) {
+        const row = raw.map((v) => this.parseInput(v, ''));
+        width = Math.max(width, row.length);
+        this.tabs[tab].push(row);
+      }
+      const last = String.fromCharCode(65 + Math.max(0, width - 1));
+      return this.json(200, { updates: { updatedRange: `${tab}!A${first}:${last}${this.tabs[tab].length}` } });
     }
 
     if (rest === '/values:batchUpdate' && method === 'POST') {
@@ -169,7 +197,9 @@ export class FakeGoogle {
         const row = Number(m[3]) - 1;
         const col = colIndex(m[2]);
         while (tab.length <= row) tab.push([]);
-        tab[row][col] = this.parseInput(d.values[0][0], d.range);
+        d.values[0].forEach((v, k) => {
+          tab[row][col + k] = this.parseInput(v, k === 0 ? d.range : '');
+        });
       }
       return this.json(200, { totalUpdatedCells: data.length });
     }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export const PAGES = ['dashboard', 'bookings', 'rooms', 'guests', 'analytics'] as const;
+export const PAGES = ['dashboard', 'bookings', 'rooms', 'guests', 'analytics', 'settings'] as const;
 export type Page = (typeof PAGES)[number];
 
 function read(): Page {

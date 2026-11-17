@@ -31,6 +31,10 @@ const PATHS = {
   hotel: '<path d="M4.5 20V9.5L12 4l7.5 5.5V20M9.5 20v-5.5h5V20"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h10"/>',
   refresh: '<path d="M20 11a8 8 0 0 0-14.5-4M4 13a8 8 0 0 0 14.5 4M5 3v4h4M19 21v-4h-4"/>',
+  edit: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  user: '<circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
 };
 export type IconName = keyof typeof PATHS;
 
@@ -224,9 +228,31 @@ export function StageMenu() {
   }, [menu]);
 
   if (!menu || !booking) return null;
-  const canPay = booking.stage !== 'cancelled' && booking.balance > 0;
+  const canPay = booking.balance > 0 || booking.paid > 0;
   return (
     <div className="menu" role="menu" ref={ref} style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0 }}>
+      <p>Booking</p>
+      <button
+        role="menuitem"
+        onClick={() => {
+          setMenu(null);
+          openLayer({ kind: 'booking-view', id: booking.id });
+        }}
+      >
+        <Icon name="eye" size={14} />
+        View details
+      </button>
+      <button
+        role="menuitem"
+        disabled={booking.stage === 'cancelled'}
+        onClick={() => {
+          setMenu(null);
+          openLayer({ kind: 'booking-edit', id: booking.id });
+        }}
+      >
+        <Icon name="edit" size={14} />
+        Edit booking…
+      </button>
       <p>Move to</p>
       {STAGES.map((s) => (
         <button
@@ -253,8 +279,8 @@ export function StageMenu() {
         }}
       >
         <Icon name="check" size={14} />
-        Record payment…
-        {canPay && <small style={{ marginLeft: 'auto', color: 'var(--faint)' }}>{inr(booking.balance)} due</small>}
+        Payment or refund…
+        {booking.balance > 0 && <small style={{ marginLeft: 'auto', color: 'var(--faint)' }}>{inr(booking.balance)} due</small>}
       </button>
     </div>
   );
@@ -317,9 +343,16 @@ export function LineChart({ vals, labels, h = 230, label }: { vals: number[]; la
     const measure = () => setW((prev) => (Math.abs(prev - Math.round(el.clientWidth)) < 3 ? prev : Math.round(el.clientWidth)));
     measure();
     if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(measure);
+    let frame = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
   }, []);
 
   useLayoutEffect(() => {

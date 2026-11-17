@@ -4,6 +4,7 @@ import { resetTokenCache } from '../../api/_lib/google';
 import { FakeGoogle, SHEET_ID } from './fakeGoogle';
 
 export const PASSWORD = 'correct horse battery';
+export const OWNER = 'owner';
 export const SECRET = 'a-long-random-secret-for-tests-0123456789';
 
 export interface Reply {
@@ -18,11 +19,13 @@ export function setEnv(g: FakeGoogle, overrides: Record<string, string | undefin
     GOOGLE_SERVICE_ACCOUNT_EMAIL: undefined,
     GOOGLE_PRIVATE_KEY: undefined,
     SHEET_ID,
-    APP_PASSWORD: PASSWORD,
+    OWNER_PASSWORD: PASSWORD,
+    APP_PASSWORD: undefined,
+    OWNER_USERNAME: OWNER,
+    OWNER_NAME: 'Test Owner',
+    HOTEL_NAME: 'Test Hotel',
     SESSION_SECRET: SECRET,
     HOTEL_TIMEZONE: 'Asia/Kolkata',
-    STAFF_NAME: 'Test Staff',
-    STAFF_ROLE: 'Admin',
     ...overrides,
   };
   for (const [k, v] of Object.entries(env)) {
@@ -42,7 +45,7 @@ export interface CallOptions {
 }
 
 export async function call(action: string, opts: CallOptions = {}): Promise<Reply> {
-  const method = opts.method ?? (['session', 'data', 'health'].includes(action) ? 'GET' : 'POST');
+  const method = opts.method ?? (['session', 'data', 'health', 'staff-list'].includes(action) ? 'GET' : 'POST');
   const headers: Record<string, string> = { 'x-forwarded-for': opts.ip ?? '10.0.0.1', 'x-forwarded-proto': 'https' };
   if (method === 'POST' && !opts.noCsrf) headers['x-requested-with'] = 'haveli';
   if (opts.cookie) headers.cookie = opts.cookie;
@@ -67,8 +70,8 @@ export async function call(action: string, opts: CallOptions = {}): Promise<Repl
   return out;
 }
 
-export async function signIn(): Promise<string> {
-  const r = await call('login', { body: { password: PASSWORD } });
+export async function signIn(username: string = OWNER, password: string = PASSWORD): Promise<string> {
+  const r = await call('login', { body: { username, password } });
   if (r.status !== 200) throw new Error(`sign-in failed in test: ${JSON.stringify(r.body)}`);
   return String(r.headers['set-cookie']).split(';')[0];
 }

@@ -1,6 +1,6 @@
 /**
  * Tiny request/response types so the server code does not depend on any
- * package. Vercel's request and response objects satisfy these.
+ * package. Node's http objects (wrapped by server/adapt.ts) satisfy these.
  */
 export interface ApiRequest {
   method?: string;
@@ -19,11 +19,14 @@ export interface ApiResponse {
 export class HttpError extends Error {
   status: number;
   fields?: Record<string, string>;
-  constructor(status: number, message: string, fields?: Record<string, string>) {
+  /** Short machine-readable reason, for the few cases the server itself reacts to. */
+  code?: string;
+  constructor(status: number, message: string, fields?: Record<string, string>, code?: string) {
     super(message);
     this.name = 'HttpError';
     this.status = status;
     this.fields = fields;
+    this.code = code;
   }
 }
 
@@ -32,7 +35,7 @@ export function header(req: ApiRequest, name: string): string {
   return Array.isArray(v) ? (v[0] ?? '') : (v ?? '');
 }
 
-/** The JSON body as an object. Vercel parses JSON for us; strings are parsed here as a fallback. */
+/** The JSON body as an object. */
 export function readBody(req: ApiRequest): Record<string, unknown> {
   let b = req.body;
   if (typeof b === 'string') {

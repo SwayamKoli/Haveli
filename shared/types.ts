@@ -45,14 +45,20 @@ export interface Booking {
   guest: string;
   /** Joined from the Guests tab; empty if the guest row is missing. */
   mobile: string;
-  room: number;
+  /** One or more rooms on the same booking (a family can take several). */
+  rooms: number[];
   /** Check-in date, YYYY-MM-DD. */
   ci: string;
   /** Check-out date, YYYY-MM-DD. */
   co: string;
   nights: number;
-  /** Rate per night at the time of booking. */
+  /** Combined rate per night of all rooms, before any discount. */
   price: number;
+  /** Rupees taken off the whole stay. */
+  discount: number;
+  /** nights x price, before discount. */
+  gross: number;
+  /** What the guest has to pay: gross minus discount. */
   total: number;
   paid: number;
   balance: number;
@@ -64,24 +70,56 @@ export interface Booking {
   /** Minutes after midnight, or null when unknown. Used for sorting. */
   etaMin: number | null;
   notes: string;
+  /** Who took the booking, and who changed it last. */
+  createdBy: string;
+  updatedBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** One payment received. The sum of a booking's payments is its Paid amount. */
+export interface Payment {
+  id: string;
+  bookingId: string;
+  /** "YYYY-MM-DD HH:mm" in the hotel's time zone. */
+  at: string;
+  amount: number;
+  method: string;
+  by: string;
+  note: string;
 }
 
 export interface DataBundle {
   rooms: Room[];
   guests: Guest[];
   bookings: Booking[];
+  payments: Payment[];
   /** Today's date in the hotel's time zone, YYYY-MM-DD. */
   today: string;
   /** Rows in the sheet that the app could not understand. Shown to staff. */
   warnings: string[];
+  /** True when the sheet is missing tabs or columns the app now needs (owner can fix it in Settings). */
+  setupNeeded: boolean;
   mode: 'live' | 'demo';
 }
 
 export interface StaffInfo {
+  username: string;
   name: string;
   role: string;
+  /** The owner account itself. */
+  owner: boolean;
+  /** Signed in to an employee's account with the owner's password. */
+  viaOwner: boolean;
+}
+
+/** An employee as the owner sees them. The password is never sent anywhere. */
+export interface StaffMember {
+  username: string;
+  name: string;
+  role: string;
+  active: boolean;
+  createdAt: string;
 }
 
 export interface SessionInfo {
@@ -91,10 +129,13 @@ export interface SessionInfo {
   /** Names of missing or invalid environment variables. Never values. */
   missing: string[];
   mode: 'live' | 'demo';
+  /** Shown on the sign-in screen and in the sidebar. */
+  hotel: string;
   staff: StaffInfo | null;
 }
 
-export interface NewBookingInput {
+/** What the booking form collects (the same fields for a new booking and for an edit). */
+export interface BookingFields {
   name: string;
   mobile: string;
   source: string;
@@ -102,8 +143,9 @@ export interface NewBookingInput {
   ci: string;
   /** Check-out, YYYY-MM-DD. */
   co: string;
-  room: number;
-  advance: number;
+  rooms: number[];
+  /** Rupees off the whole stay. */
+  discount: number;
   people: number;
   /** 24-hour "HH:MM", or empty. */
   eta: string;
@@ -114,9 +156,38 @@ export interface NewBookingInput {
   notes: string;
 }
 
+export interface NewBookingInput extends BookingFields {
+  /** Money received now. */
+  advance: number;
+  /** How the advance was paid (see PAY_METHODS). */
+  method: string;
+}
+
+export interface EditBookingInput extends BookingFields {
+  id: string;
+}
+
+export interface StaffSaveInput {
+  username: string;
+  name: string;
+  role: string;
+  active: boolean;
+  /** Required for a new employee; for an existing one it sets a new password. */
+  password: string;
+}
+
 export interface NewRoomInput {
   no: number;
   floor: number;
+  type: string;
+}
+
+/** Owner quick start: rooms 101..1nn, 201..2nn and so on. */
+export interface RoomsGenerateInput {
+  floors: number;
+  perFloor: number;
+  /** Nightly rate in rupees for every new room. */
+  rate: number;
   type: string;
 }
 
@@ -132,6 +203,7 @@ export interface HealthReport {
   ok: boolean;
   checks: HealthCheck[];
   sheetTitle: string;
-  sheetUrl: string;
   counts: { rooms: number; guests: number; bookings: number };
+  /** True when "Set up sheet" would add something. */
+  setupNeeded: boolean;
 }

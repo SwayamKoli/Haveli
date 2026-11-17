@@ -24,6 +24,14 @@ export const MANUAL_LABEL: Record<RoomManual, string> = {
   maintenance: 'Maintenance',
 };
 
+export const PAY_METHODS = ['Cash', 'UPI', 'Card', 'Bank transfer'];
+
+/** A payment with a negative amount is money given back. It may use any PAY_METHODS value (how it was returned) or this one. */
+export const REFUND_METHOD = 'Refund';
+
+/** Roles an employee can be given (labels only: every employee can do the same things). */
+export const STAFF_ROLES = ['Reception', 'Manager', 'Accounts', 'Housekeeping', 'Other'];
+
 export const SOURCES = ['Direct', 'Walk-in', 'MakeMyTrip', 'Booking.com', 'Goibibo'];
 
 export const ID_TYPES = ['Aadhaar', 'Passport', 'Driving licence', 'Voter ID', 'Other'];

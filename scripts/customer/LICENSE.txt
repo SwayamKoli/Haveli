@@ -1,0 +1,48 @@
+HAVELI SOFTWARE LICENCE
+
+Version:   {{VERSION}}
+Issued:    {{DATE}}
+Licensor:  {{SELLER}}
+Licensee:  {{LICENSEE}}
+
+1. WHAT YOU MAY DO
+   The Licensor grants the Licensee a non-exclusive, non-transferable licence to install and use
+   Haveli at ONE hotel property (one licence for each property or franchise unit), on computers
+   owned or controlled by the Licensee, for the Licensee's own internal business. Further
+   properties need further licences. The Licensee may keep backup copies for safekeeping.
+
+2. WHAT YOU MAY NOT DO
+   The Licensee may not sell, rent, lend, sublicense, publish or give the software, this licence
+   or its settings to anyone else; may not use it to run a hosted or shared service for other
+   businesses; and may not remove the Licensor's name or notices. The Licensee may not try to
+   copy, extract or change the program's inner workings except where the law allows it
+   regardless of this agreement.
+
+3. OWNERSHIP
+   Haveli, its design and its code remain the property of the Licensor. This licence gives the
+   right to use the software; it does not transfer ownership of it.
+
+4. YOUR DATA
+   Bookings, guests, rooms and payments are kept in the Licensee's own Google Sheet and Google
+   account. The Licensor does not receive, host or have access to that data. The Licensee is
+   responsible for who it shares the sheet and the owner password with, for keeping the .env
+   settings file private, and for keeping backups. Google's own terms apply to the Google
+   account and sheet.
+
+5. UPDATES AND SUPPORT
+   Updates and support are provided only as agreed in writing between the Licensor and the
+   Licensee. Without such an agreement none is promised.
+
+6. NO WARRANTY, LIMITED LIABILITY
+   The software is supplied "as is". The Licensor does not promise that it is free of errors or
+   that it fits a particular purpose. To the extent the law allows, the Licensor is not liable
+   for lost bookings, lost income, lost data or any indirect loss, and the total liability for
+   any claim is limited to the licence fee the Licensee paid.
+
+7. DURATION AND ENDING
+   The licence lasts for as long as the Licensee follows these terms. If the Licensee breaks
+   them, the Licensor may end the licence, and the Licensee must then stop using the software
+   and delete all copies.
+
+8. LAW
+   This licence is governed by the laws of India.

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { DragEvent } from 'react';
 import { SOURCES, STAGES, STAGE_LABEL } from '../../shared/constants';
+import { roomsLabel } from '../../shared/rules';
 import type { Booking, Stage } from '../../shared/types';
 import { fmtD, inr, plural, rel } from '../lib/format';
 import { daysFrom } from '../lib/selectors';
@@ -8,8 +9,8 @@ import { useStore } from '../store';
 import { Avatar, Icon, PageHead, PayChip, STAGE_COLOR, StageChip } from '../ui';
 
 function Card({ b, today, onDragging }: { b: Booking; today: string; onDragging: (id: string | null) => void }) {
-  const { data, setMenu } = useStore();
-  const room = data.rooms.find((r) => r.no === b.room);
+  const { data, setMenu, openLayer } = useStore();
+  const room = data.rooms.find((r) => r.no === b.rooms[0]);
   const when = b.stage === 'in' ? `out ${rel(daysFrom(today, b.co))}` : b.stage === 'out' ? `left ${rel(daysFrom(today, b.co))}` : `arrives ${rel(daysFrom(today, b.ci))}`;
   const [dragging, setDragging] = useState(false);
   return (
@@ -17,6 +18,11 @@ function Card({ b, today, onDragging }: { b: Booking; today: string; onDragging:
       className={`kcard${b.stage === 'cancelled' ? ' cancelled-card' : ''}${dragging ? ' drag' : ''}`}
       draggable
       data-id={b.id}
+      tabIndex={0}
+      onClick={() => openLayer({ kind: 'booking-view', id: b.id })}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.target === e.currentTarget) openLayer({ kind: 'booking-view', id: b.id });
+      }}
       onDragStart={(e: DragEvent) => {
         setDragging(true);
         onDragging(b.id);
@@ -35,7 +41,7 @@ function Card({ b, today, onDragging }: { b: Booking; today: string; onDragging:
       <div className="k-top">
         <span>
           <i className="dotc" style={{ background: STAGE_COLOR[b.stage] }} />
-          {room?.type ?? 'Room'} · {b.source}
+          {b.rooms.length > 1 ? `${b.rooms.length} rooms` : (room?.type ?? 'Room')} · {b.source}
         </span>
         <button
           className="more"
@@ -49,7 +55,7 @@ function Card({ b, today, onDragging }: { b: Booking; today: string; onDragging:
         </button>
       </div>
       <h4>{b.guest}</h4>
-      <p className="ks">Room {b.room} · {plural(b.nights, 'night')} · {inr(b.total)}</p>
+      <p className="ks">{b.rooms.length > 1 ? 'Rooms' : 'Room'} {roomsLabel(b.rooms)} · {plural(b.nights, 'night')} · {inr(b.total)}{b.discount > 0 ? ` (−${inr(b.discount)})` : ''}</p>
       <div className="k-foot">
         <span className="chip">
           <Icon name="clock" size={12} />
@@ -72,7 +78,7 @@ export function Bookings() {
   const list = bookings.filter(
     (b) =>
       (ui.bsrc === 'All' || b.source === ui.bsrc) &&
-      (!q || b.guest.toLowerCase().includes(q) || String(b.room).includes(q) || b.mobile.includes(q) || b.id.toLowerCase().includes(q)),
+      (!q || b.guest.toLowerCase().includes(q) || b.rooms.some((n) => String(n).includes(q)) || b.mobile.includes(q) || b.id.toLowerCase().includes(q)),
   );
   const active = bookings.filter((b) => b.stage === 'reserved' || b.stage === 'in').length;
   const sources = Array.from(new Set(['All', ...SOURCES, ...bookings.map((b) => b.source)]));
@@ -164,9 +170,9 @@ export function Bookings() {
               <tbody>
                 {list.length ? (
                   [...list].sort((a, b) => b.ci.localeCompare(a.ci)).map((b) => {
-                    const room = rooms.find((r) => r.no === b.room);
+                    const room = rooms.find((r) => r.no === b.rooms[0]);
                     return (
-                      <tr key={b.id}>
+                      <tr key={b.id} className="clickable" onClick={() => openLayer({ kind: 'booking-view', id: b.id })}>
                         <td className="num">{b.id}</td>
                         <td>
                           <div className="who">
@@ -177,13 +183,16 @@ export function Bookings() {
                             </div>
                           </div>
                         </td>
-                        <td>{b.room}{room ? ` · ${room.type}` : ''}</td>
+                        <td>{roomsLabel(b.rooms)}{b.rooms.length === 1 && room ? ` · ${room.type}` : ''}</td>
                         <td className="num">{fmtD(b.ci)} → {fmtD(b.co)}</td>
-                        <td className="num">{inr(b.total)}</td>
+                        <td className="num">
+                          {inr(b.total)}
+                          {b.discount > 0 && <small style={{ display: 'block', color: 'var(--muted)' }}>− {inr(b.discount)} discount</small>}
+                        </td>
                         <td><PayChip b={b} /></td>
                         <td><StageChip stage={b.stage} /></td>
                         <td>
-                          <button className="more" aria-label="Change stage" onClick={(e) => setMenu({ id: b.id, rect: e.currentTarget.getBoundingClientRect() })}>
+                          <button className="more" aria-label={`Actions for ${b.guest}`} onClick={(e) => { e.stopPropagation(); setMenu({ id: b.id, rect: e.currentTarget.getBoundingClientRect() }); }}>
                             <Icon name="more" size={16} />
                           </button>
                         </td>

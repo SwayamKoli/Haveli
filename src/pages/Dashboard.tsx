@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { ROOM_STATE_LABEL } from '../../shared/constants';
 import type { RoomState } from '../../shared/types';
-import { HOTEL_NAME } from '../config';
+import { roomsLabel } from '../../shared/rules';
 import { inr, longDate, nowMinutes, plural, weekday } from '../lib/format';
 import type { Page } from '../lib/route';
-import { arrivalsToday, attentionRooms, counts, departuresToday, occupancyPct, revenueOn, revenueSeries, weekOccupancy } from '../lib/selectors';
+import { arrivalsToday, attentionRooms, collectedOn, collectionSeries, counts, departuresToday, occupancyPct, outstanding, weekOccupancy } from '../lib/selectors';
 import { addDays } from '../../shared/dates';
 import { useStore } from '../store';
 import { Avatar, CountUp, Icon, LineChart, PageHead, PayChip, ROOM_COLOR, cssVars } from '../ui';
@@ -25,8 +25,8 @@ function StatCard({ cls = '', title, go, onGo, foot, children }: { cls?: string;
 }
 
 export function Dashboard({ go }: { go: (p: Page) => void }) {
-  const { data, ui, setUi, openLayer, setStage, setRoom } = useStore();
-  const { rooms, bookings, today } = data;
+  const { data, ui, setUi, openLayer, setStage, setRoom, reload, hotel } = useStore();
+  const { rooms, today } = data;
   const c = counts(data);
   const n = rooms.length;
   const occ = n ? Math.round((c.occupied / n) * 100) : 0;
@@ -35,8 +35,9 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
   const arrLeft = arr.filter((b) => b.stage === 'reserved').length;
   const dep = departuresToday(data);
   const depLeft = dep.filter((b) => b.stage === 'in').length;
-  const rev = revenueOn(data, today);
-  const lastWeek = revenueOn(data, addDays(today, -7));
+  const rev = collectedOn(data.payments, today);
+  const lastWeek = collectedOn(data.payments, addDays(today, -7));
+  const toCollect = outstanding(data);
   const dayName = weekday(today, 'short');
   const revDelta = lastWeek > 0 ? Math.round(((rev - lastWeek) / lastWeek) * 100) : null;
 
@@ -44,25 +45,25 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
   const peak = days.reduce((m, d, i) => (d.pct > days[m].pct ? i : m), 0);
 
   const next = arr.filter((b) => b.stage === 'reserved' && b.ci === today).sort((a, b) => (a.etaMin ?? 840) - (b.etaMin ?? 840))[0];
-  const room = next && rooms.find((r) => r.no === next.room);
+  const room = next && rooms.find((r) => r.no === next.rooms[0]);
   const diff = next ? (next.etaMin ?? 840) - nowMinutes() : 0;
   const when = diff > 60 ? `Arrives in ${Math.floor(diff / 60)} h ${diff % 60} min` : diff > 0 ? `Arrives in ${diff} min` : 'Expected any moment';
 
   const states: RoomState[] = ['occupied', 'available', 'cleaning', 'maintenance'];
   const attention = attentionRooms(data);
   const list = ui.mov === 'arr' ? arr : dep;
-  const series = revenueSeries(data, 14);
+  const series = collectionSeries(data, 14);
 
   return (
     <>
-      <PageHead title="Dashboard" sub={`Rooms, guests and money at ${HOTEL_NAME} · ${longDate(today)}`}>
+      <PageHead title="Dashboard" sub={`Rooms, guests and money at ${hotel} · ${longDate(today)}`}>
         <button className="btn primary" onClick={() => openLayer({ kind: 'booking' })}>
           <Icon name="plus" />
           New booking
         </button>
-        <button className="btn ghost" onClick={() => openLayer({ kind: 'settings' })}>
+        <button className="btn ghost" onClick={() => void reload()}>
           <Icon name="refresh" />
-          Sheet status
+          Refresh
         </button>
       </PageHead>
 
@@ -77,7 +78,7 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
         <StatCard title="Departures today" go="bookings" onGo={go} foot={<span className={`chip ${depLeft ? 'warn' : 'good'}`}>{depLeft ? `${depLeft} yet to check out` : dep.length ? 'All checked out' : 'None due'}</span>}>
           <CountUp value={dep.length} />
         </StatCard>
-        <StatCard title="Room revenue today" go="analytics" onGo={go} foot={<span className={`chip ${revDelta === null ? '' : revDelta >= 0 ? 'good' : 'warn'}`}>{revDelta === null ? `No sales last ${dayName}` : `${Math.abs(revDelta)}% ${revDelta >= 0 ? 'above' : 'below'} last ${dayName}`}</span>}>
+        <StatCard title="Money received today" go="analytics" onGo={go} foot={<><span className={`chip ${revDelta === null ? '' : revDelta >= 0 ? 'good' : 'warn'}`}>{revDelta === null ? `Nothing taken last ${dayName}` : `${Math.abs(revDelta)}% ${revDelta >= 0 ? 'above' : 'below'} last ${dayName}`}</span> {toCollect > 0 && <span>{inr(toCollect)} still to collect</span>}</>}>
           <span className="num">{inr(rev)}</span>
         </StatCard>
       </div>
@@ -123,7 +124,7 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
               <h4>
                 {next.guest}
                 <br />
-                <span style={{ color: 'var(--muted)', fontSize: 16 }}>Room {next.room}{room ? ` · ${room.type}` : ''}</span>
+                <span style={{ color: 'var(--muted)', fontSize: 16 }}>{next.rooms.length > 1 ? `Rooms ${roomsLabel(next.rooms)}` : `Room ${next.rooms[0]}${room ? ` · ${room.type}` : ''}`}</span>
               </h4>
               <p>
                 {next.eta ? `Expected ${next.eta} · ` : ''}{plural(next.nights, 'night')}
@@ -195,11 +196,11 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
         <section className="card anim">
           <div className="card-h">
             <div>
-              <h3>Room revenue</h3>
-              <p className="sub">Last 14 days · today is in progress</p>
+              <h3>Money received</h3>
+              <p className="sub">Payments taken each day, last 14 days · today is in progress</p>
             </div>
           </div>
-          <LineChart vals={series.vals} labels={series.labels} h={268} label="Room revenue, last 14 days" />
+          <LineChart vals={series.vals} labels={series.labels} h={268} label="Money received, last 14 days" />
         </section>
 
         <section className="card anim">
@@ -216,7 +217,7 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
               list.map((b) => {
                 const arrivals = ui.mov === 'arr';
                 const done = arrivals ? b.stage === 'in' : b.stage === 'out';
-                const r = rooms.find((x) => x.no === b.room);
+                const r = rooms.find((x) => x.no === b.rooms[0]);
                 const overdue = !arrivals && b.stage === 'in' && b.co < today;
                 return (
                   <div className="row" key={b.id}>
@@ -224,7 +225,7 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
                     <div className="t">
                       <b>{b.guest}</b>
                       <small>
-                        Room {b.room}{r ? ` · ${r.type}` : ''} · {arrivals ? (b.eta ? `ETA ${b.eta}` : 'No ETA') : overdue ? 'overdue' : 'by 11:00 AM'}
+                        {b.rooms.length > 1 ? `Rooms ${roomsLabel(b.rooms)}` : `Room ${b.rooms[0]}${r ? ` · ${r.type}` : ''}`} · {arrivals ? (b.eta ? `ETA ${b.eta}` : 'No ETA') : overdue ? 'overdue' : 'by 11:00 AM'}
                       </small>
                     </div>
                     <PayChip b={b} />

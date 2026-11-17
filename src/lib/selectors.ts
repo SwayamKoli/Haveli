@@ -5,7 +5,7 @@
 import { TYPE_DEFAULTS } from '../../shared/constants';
 import { addDays, diffDays, weekdayMon0 } from '../../shared/dates';
 import { guestIn, roomState } from '../../shared/rules';
-import type { Booking, DataBundle, Guest, Room, RoomState } from '../../shared/types';
+import type { Booking, DataBundle, Guest, Payment, Room, RoomState } from '../../shared/types';
 import { dayLabel } from './format';
 
 export { guestIn, roomState };
@@ -29,12 +29,23 @@ export function nightsOn(d: D, date: string): Booking[] {
   return d.bookings.filter((b) => (b.stage === 'in' || b.stage === 'out') && b.ci <= date && date < b.co);
 }
 
-export function revenueOn(d: D, date: string): number {
-  return nightsOn(d, date).reduce((s, b) => s + b.price, 0);
+/** Rooms sold on `date` (a family taking three rooms counts three). */
+export function roomsSoldOn(d: D, date: string): number {
+  return nightsOn(d, date).reduce((s, b) => s + b.rooms.length, 0);
+}
+
+/** Money received on `date`, from the payment record. Refunds count as negative. */
+export function collectedOn(payments: Payment[], date: string): number {
+  return payments.reduce((s, p) => (p.at.slice(0, 10) === date ? s + p.amount : s), 0);
+}
+
+/** What is still owed by guests who are in the hotel right now or have left. */
+export function outstanding(d: Pick<D, 'bookings'>): number {
+  return d.bookings.filter((b) => b.stage === 'in' || b.stage === 'out').reduce((s, b) => s + Math.max(0, b.balance), 0);
 }
 
 export function occupancyPct(d: D, date: string): number {
-  return d.rooms.length ? Math.round((nightsOn(d, date).length / d.rooms.length) * 100) : 0;
+  return d.rooms.length ? Math.min(100, Math.round((roomsSoldOn(d, date) / d.rooms.length) * 100)) : 0;
 }
 
 export function arrivalsToday(d: D): Booking[] {
@@ -57,9 +68,10 @@ export function weekOccupancy(d: D): { dow: number; days: { date: string; pct: n
   return { dow, days };
 }
 
-export function revenueSeries(d: D, n: number): { vals: number[]; labels: string[] } {
+/** Money received on each of the last `n` days. */
+export function collectionSeries(d: Pick<D, 'today'> & { payments: Payment[] }, n: number): { vals: number[]; labels: string[] } {
   const dates = Array.from({ length: n }, (_, i) => addDays(d.today, i - (n - 1)));
-  return { vals: dates.map((x) => revenueOn(d, x)), labels: dates.map(dayLabel) };
+  return { vals: dates.map((x) => collectedOn(d.payments, x)), labels: dates.map(dayLabel) };
 }
 
 export interface RoomTypeInfo {
@@ -114,7 +126,7 @@ export function guestSummaries(d: { guests: Guest[]; bookings: Booking[] }): Gue
       billed: real.reduce((s, b) => s + b.total, 0),
       due: real.reduce((s, b) => s + b.balance, 0),
       status,
-      rooms: Array.from(new Set(list.map((b) => b.room))),
+      rooms: Array.from(new Set(list.flatMap((b) => b.rooms))),
     };
   };
   const out: GuestSummary[] = d.guests.map((g) => summarise(g.id, g.id, g.name, g.mobile, g.city, byGuest.get(g.id) ?? []));
