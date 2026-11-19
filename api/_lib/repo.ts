@@ -6,6 +6,8 @@
  * Nothing is cached between requests, so edits made by hand in the sheet are
  * always picked up.
  */
+import { readBackground } from './media';
+import { FACTS_FIELDS, factsFrom, styleRequests } from './sheetStyle';
 import { getAccessToken, sheetsRequest } from './google';
 import { configProblems, getConfig } from './env';
 import type { Config } from './env';
@@ -436,6 +438,7 @@ export async function loadBundle(): Promise<DataBundle> {
     warnings: L.warnings,
     setupNeeded: L.gaps.length > 0,
     mode: 'live',
+    background: readBackground(),
   };
 }
 
@@ -959,7 +962,7 @@ async function saveStaffNow(input: StaffSaveInput, by: string): Promise<StaffMem
 
 /* ---------- one-click sheet setup ---------- */
 
-async function setupSheetNow(): Promise<{ changes: string[] }> {
+async function setupSheetNow(): Promise<{ changes: string[]; style: string }> {
   getConfig();
   const changes: string[] = [];
   const have = await listTabs();
@@ -983,8 +986,33 @@ async function setupSheetNow(): Promise<{ changes: string[] }> {
   }
   await writeCells(writes);
   forgetStaffCache();
-  return { changes };
+  let style: string;
+  try {
+    style = (await styleSheetNow()).changes.join(' ');
+  } catch (e) {
+    // The sheet works without its colours, so a styling problem never undoes the setup.
+    style = `Could not apply the Clay & Sand look: ${why(e)}`;
+  }
+  return { changes, style };
 }
+
+/* ---------- the Clay & Sand look for the sheet ---------- */
+
+async function styleSheetNow(): Promise<{ changes: string[] }> {
+  getConfig();
+  const have = await listTabs();
+  const present = ALL_TABS.filter((t) => have.includes(t));
+  if (!present.length) throw new HttpError(409, 'There are no Haveli tabs in the sheet yet. Press "Set up sheet" first.', undefined, 'SETUP');
+  const raw = await sheetsRequest<Parameters<typeof factsFrom>[0]>('GET', `?fields=${encodeURIComponent(FACTS_FIELDS)}`);
+  const headers = await fetchRanges(present);
+  const facts = factsFrom(raw, headers).filter((f) => present.includes(f.tab));
+  const requests = facts.flatMap(styleRequests);
+  if (requests.length) await sheetsRequest('POST', ':batchUpdate', { requests });
+  return { changes: [`Applied the Clay & Sand look to ${facts.map((f) => f.tab).join(', ')}`] };
+}
+
+/** Colours, widths, number formats and drop-downs for every tab. Never touches a value. Safe to run again. */
+export const styleSheet = () => exclusive(() => styleSheetNow());
 
 /* ---------- connection check ---------- */
 

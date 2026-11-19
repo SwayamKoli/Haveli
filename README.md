@@ -1,11 +1,17 @@
 # Haveli: hotel management
 
 Bookings, rooms, guests, payments and a daily dashboard for a hotel. Your data lives in a **Google Sheet that you own**; this app reads and writes it.
-Dark "liquid glass" design, works on a laptop, tablet and phone.
+A calm **Clay & Sand** design (dark by default, light on request), works on a laptop, tablet and phone.
 
 > **Try it first, no setup:** `npm install` then `npm run dev:demo`. This runs on made-up data (50 rooms on 5 floors) and saves nothing.
 
-**Version 0.2.0 at a glance**
+**Version 0.3.0 at a glance**
+
+- New **Clay & Sand** look: warm dark (default) and light themes, serif headings, one terracotta accent. A **sun/moon button beside the bell** (and in Settings) switches theme. Each person's last choice is remembered on sign-in.
+- The **owner** can set the website **background** in Settings → **Website background**: *Plain*, the drawn *Hotel scene*, a *Photo* (JPG/PNG/WebP, up to 5 MB) or a *Video* (MP4/WebM, **15 seconds or less**, up to 20 MB, loops without a gap). Only one at a time; it shows for every user; only the owner can change it.
+- The **Google Sheet gets the same look** in every tab (header, banded rows, colours for stages and room status, dropdowns, ₹ formats, frozen header). Settings → **Apply Clay & Sand style**; *Set up sheet* does it too. It never changes any value.
+
+Earlier, in 0.2.0:
 
 - Every person signs in with their **own username and password**. The owner adds employees in **Settings → Employees**.
 - The **owner password opens any employee's account** (no need to remember theirs). Work done that way is recorded as "Name (via owner)".
@@ -78,6 +84,7 @@ The app checks the sheet every 45 seconds, so edits made directly in Google Shee
 - **Payments** are separate from stages: `…` → *Payment or refund*. Each one is a dated row in the **Payments** tab with the employee's name; "Paid" on a booking is the sum of its payments. Refunds need a reason. Checking out does not mark anything as paid.
 - **Discount** is taken off the room total (₹ or %) and is saved with the booking. **Edit booking** (`…` menu) can fix anything later; after check-out only guest details, notes and discount stay editable.
 - **Several rooms, one booking:** tick as many free rooms as needed; the rate shown is the combined nightly rate.
+- **Theme and background:** the sun/moon button next to the bell switches dark and light for you only (it is remembered per person). The **background** is chosen once by the owner and is the same for everyone. The file is kept in the `media/` folder next to the app (or the folder in `MEDIA_DIR`), not in the Google Sheet, and the server checks it again whatever the browser says: real file type, size, and for a video its length. On phones and with "reduce motion" on, a video background shows a still frame to save battery. It needs a server with a **writable disk** (your own computer or server); hosting with a read-only disk cannot keep it.
 - **Undo** appears after a stage change.
 - **Two people at once:** saves are queued, so two staff members booking the same room at the same moment cannot both succeed. Run only one copy of the app against a sheet.
 - **Safety:** each person has their own login (employee passwords are stored scrambled, never readable), the Google Sheet link is only revealed after the owner password is typed, login attempts are rate-limited, the session cookie is HttpOnly, and every change request carries an anti-forgery header. Text typed into the app is stored as plain text in the sheet, so a guest named `=HYPERLINK(...)` cannot run as a formula.
@@ -98,7 +105,7 @@ Columns are found **by header name**, so you can reorder them or add your own ex
 
 ## 7. Updating the app (zip workflow)
 
-New versions arrive as a zip. Unzip it **over** your project folder, keeping your `.env` and `node_modules`, then:
+New versions arrive as a zip. Unzip it **over** your project folder, keeping your `.env`, `media/` and `node_modules`, then:
 
 ```bash
 npm install     # only needed if package.json changed
@@ -108,7 +115,7 @@ npm run build   # if you use npm start
 ## 8. Checks
 
 ```bash
-npm test             # 129 tests: booking rules, API, sign-in, setup wizard (no internet needed)
+npm test             # 159 tests: booking rules, API, sign-in, setup wizard, background upload checks, sheet styling (no internet needed)
 npm run typecheck    # TypeScript check of the whole project
 ```
 
@@ -121,6 +128,8 @@ npm run typecheck    # TypeScript check of the whole project
 | "Share the sheet with …" | Step 2.6: share the sheet with the service account email as **Editor**. |
 | "Set up the sheet first" / "no tab called …" | Sign in as the owner → Settings → **Set up sheet**. |
 | An employee cannot sign in | Settings → Employees → Edit: tick *Can sign in*, or set a new password. |
+| A background video is refused | Keep it **15 seconds or less** and under 20 MB, as MP4 (H.264) or WebM. A phone video trimmed in its gallery app works. |
+| The sheet still looks plain | Sign in as owner → Settings → **Apply Clay & Sand style**. Your own colours on the same cells may override it. |
 | "Sheet not found" | `SHEET_ID` is wrong. |
 | Port already in use | `PORT=3001 npm start` |
 | Changed `.env` but nothing changed | Stop the server (Ctrl+C) and start it again. |
@@ -131,7 +140,9 @@ npm run typecheck    # TypeScript check of the whole project
 shared/   rules both sides use (validation, discounts, clash detection, dates)
 api/      the server logic: sign-in, staff, Google Sheets access
 server/   tiny web server for `npm start`
-src/      the website (React). pages/ = screens, modals.tsx = pop-ups
+src/      the website (React). pages/ = screens, modals.tsx = pop-ups, theme.css = the Clay & Sand look
+public/    fonts (Inter, Baskerville) bundled with the app, so it works offline and sends nothing to Google Fonts
+media/     the owner's background file (created on first upload; not in git)
 scripts/  setup.mjs (wizard), release.mjs (customer folder), customer/ (start scripts, licence, guide)
 tests/    automated tests
 ```

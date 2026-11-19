@@ -18,7 +18,7 @@ import {
   validateBooking,
   validateNewRoom,
 } from '../../shared/rules';
-import type { Booking, DataBundle, Guest, Payment, Room, RoomManual, Stage, StaffMember } from '../../shared/types';
+import type { BackgroundInfo, Booking, DataBundle, Guest, Payment, Room, RoomManual, Stage, StaffMember } from '../../shared/types';
 import { HOTEL_NAME } from '../config';
 import { ApiError } from './api';
 import type { Backend } from './api';
@@ -206,6 +206,12 @@ export function makeDemoBackend(): Backend {
     mode: 'demo' as const,
     hotel: HOTEL_NAME,
     staff: { username: 'owner', name: me, role: 'Owner', owner: true, viaOwner: false },
+    background: { kind: 'none', url: null, version: 0 } as BackgroundInfo,
+  };
+  const setBg = (kind: BackgroundInfo['kind'], url: string | null): BackgroundInfo => {
+    if (session.background.url?.startsWith('blob:')) URL.revokeObjectURL(session.background.url);
+    session.background = { kind, url, version: session.background.version + 1 };
+    return session.background;
   };
 
   const must = <T>(v: T | undefined, msg: string): T => {
@@ -239,7 +245,7 @@ export function makeDemoBackend(): Backend {
 
     load: async () => {
       await wait();
-      const bundle: DataBundle = { rooms: db.rooms, guests: db.guests, bookings: db.bookings, payments: db.payments, today, warnings: [], setupNeeded: false, mode: 'demo' };
+      const bundle: DataBundle = { rooms: db.rooms, guests: db.guests, bookings: db.bookings, payments: db.payments, today, warnings: [], setupNeeded: false, mode: 'demo', background: session.background };
       return clone(bundle);
     },
 
@@ -429,6 +435,10 @@ export function makeDemoBackend(): Backend {
     },
 
     setupSheet: async () => ({ changes: [] }),
+    styleSheet: async () => ({ changes: [] }),
+
+    setBackground: async (kind) => ({ background: setBg(kind, null) }),
+    uploadBackground: async (kind, file) => ({ background: setBg(kind, URL.createObjectURL(file)) }),
 
     sheetLink: async () => {
       throw new ApiError(409, 'Demo mode has no Google Sheet.');

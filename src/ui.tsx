@@ -15,7 +15,7 @@ const PATHS = {
   cal: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   users: '<circle cx="9" cy="8.5" r="3.3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16.5 5.6a3 3 0 0 1 0 5.8M18 14.4c1.8.7 3 2.5 3 5.6"/>',
   chart: '<path d="M5 20v-6M12 20V5M19 20v-9"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/>',
+  gear: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8M12 17h.01"/>',
   out: '<path d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9M16 8l4 4-4 4M20 12H9"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',
@@ -34,6 +34,12 @@ const PATHS = {
   edit: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   user: '<circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
   lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"/>',
+  moon: '<path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2z"/>',
+  image: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 3.5 3 3-2.5 4.5 4"/>',
+  video: '<rect x="3.5" y="6" width="12.5" height="12" rx="3"/><path d="M16 10.5l4.5-2.5v8L16 13.5"/>',
+  upload: '<path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M4.5 15.5v2A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5v-2"/>',
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12A1.5 1.5 0 0 0 8.8 20.5h6.4a1.5 1.5 0 0 0 1.5-1.5L17.5 7M10 11v6M14 11v6"/>',
   eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
 };
 export type IconName = keyof typeof PATHS;
@@ -408,15 +414,15 @@ export function LineChart({ vals, labels, h = 230, label }: { vals: number[]; la
         >
           <defs>
             <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#4aa3c8" stopOpacity=".38" />
-              <stop offset="1" stopColor="#4aa3c8" stopOpacity="0" />
+              <stop offset="0" style={{ stopColor: 'var(--accent)' }} stopOpacity=".26" />
+              <stop offset="1" style={{ stopColor: 'var(--accent)' }} stopOpacity="0" />
             </linearGradient>
           </defs>
           {[0, 1, 2, 3, 4].map((t) => {
             const yy = y((max * t) / 4);
             return (
               <g key={t}>
-                <line x1={pl} x2={W - pr} y1={yy} y2={yy} stroke={`rgba(170,215,230,${t === 0 ? 0.2 : 0.07})`} strokeDasharray={t === 0 ? undefined : '3 5'} />
+                <line x1={pl} x2={W - pr} y1={yy} y2={yy} stroke="rgb(var(--t))" strokeOpacity={t === 0 ? 0.2 : 0.1} strokeDasharray={t === 0 ? undefined : '3 5'} />
                 <text x={pl - 9} y={yy + 4} textAnchor="end">
                   {kfmt((max * t) / 4)}
                 </text>
@@ -425,9 +431,9 @@ export function LineChart({ vals, labels, h = 230, label }: { vals: number[]; la
           })}
           {xl}
           <path d={area} fill={`url(#${gid})`} />
-          <path ref={lineRef} className="ln" d={d} fill="none" stroke="#6bbbdc" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          <line className="guide" x1={x(at)} x2={x(at)} y1={pt} y2={h - pb} stroke="rgba(232,241,243,.3)" strokeDasharray="3 4" opacity={hover === null ? 0 : 1} />
-          <circle className="gd" r="5" fill="#0c181d" stroke="#e8f1f3" strokeWidth="2" cx={x(at)} cy={y(vals[at])} />
+          <path ref={lineRef} className="ln" d={d} fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          <line className="guide" x1={x(at)} x2={x(at)} y1={pt} y2={h - pb} stroke="rgb(var(--t))" strokeOpacity=".3" strokeDasharray="3 4" opacity={hover === null ? 0 : 1} />
+          <circle className="gd" r="5" fill="var(--bg)" stroke="var(--accent)" strokeWidth="2.2" cx={x(at)} cy={y(vals[at])} />
         </svg>
         <div className="tipbox" style={{ left: Math.max(60, Math.min(W - 60, x(at))), top: y(vals[at]), opacity: hover === null ? 0 : 1 }}>
           <b>{inr(vals[at])}</b>

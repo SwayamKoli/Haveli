@@ -12,6 +12,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { handleApi } from './adapt';
+import { serveMedia } from './media-serve';
 import { loadDotEnv } from './dotenv';
 
 // Works both from source (server/start.ts, run by tsx) and as the bundled server.mjs in a customer folder.
@@ -33,7 +34,9 @@ const TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.ico': 'image/x-icon',
   '.json': 'application/json',
+  '.woff': 'font/woff',
   '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
   '.map': 'application/json',
 };
 
@@ -53,6 +56,8 @@ const server = createServer((req, res) => {
     });
     return;
   }
+
+  if (serveMedia(req, res)) return;
 
   let file = normalize(join(DIST, decodeURIComponent(url.pathname)));
   if (file !== DIST && !file.startsWith(DIST + sep)) {

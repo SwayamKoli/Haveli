@@ -101,7 +101,7 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
                   <div className="col-h">
                     <button
                       className={`bar${fc ? ' fc' : ''}${isToday ? ' today' : ''}${i === peak && d.pct > 0 ? ' peak' : ''}`}
-                      style={cssVars({ '--h': `${d.pct}%`, '--c1': i % 2 ? '#9aa9e0' : '#68b3ac', '--c2': i % 2 ? '#6f84c9' : '#3f8a8a' })}
+                      style={cssVars({ '--h': `${d.pct}%`, '--c1': 'var(--bar-a)', '--c2': 'var(--bar-b)' })}
                       aria-label={`${weekday(d.date)} ${tip}`}
                     >
                       <span className="tip num">{tip}</span>
@@ -124,7 +124,7 @@ export function Dashboard({ go }: { go: (p: Page) => void }) {
               <h4>
                 {next.guest}
                 <br />
-                <span style={{ color: 'var(--muted)', fontSize: 16 }}>{next.rooms.length > 1 ? `Rooms ${roomsLabel(next.rooms)}` : `Room ${next.rooms[0]}${room ? ` · ${room.type}` : ''}`}</span>
+                <span style={{ color: 'var(--muted)', fontSize: 15, fontFamily: 'var(--font)' }}>{next.rooms.length > 1 ? `Rooms ${roomsLabel(next.rooms)}` : `Room ${next.rooms[0]}${room ? ` · ${room.type}` : ''}`}</span>
               </h4>
               <p>
                 {next.eta ? `Expected ${next.eta} · ` : ''}{plural(next.nights, 'night')}

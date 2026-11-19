@@ -7,6 +7,7 @@ import { roomTypes } from '../lib/selectors';
 import { useStore } from '../store';
 import { ApiError } from '../lib/api';
 import { Avatar, Field, Icon, PageHead } from '../ui';
+import { BackgroundCard, ThemeCard } from './Appearance';
 
 const EMPTY_STAFF: StaffSaveInput = { username: '', name: '', role: STAFF_ROLES[0], active: true, password: '' };
 
@@ -73,9 +74,21 @@ function SheetCard() {
     setBusy(true);
     try {
       const r = await backend.setupSheet();
-      toast(r.changes.length ? r.changes.join(' · ') : 'The sheet already has everything it needs.');
+      const done = [...r.changes, ...(r.style ? [r.style] : [])];
+      toast(done.join(' · ') || 'The sheet already has everything it needs.');
       await reload(true);
       setReport(await backend.health());
+    } catch (e) {
+      toast(errText(e), { err: true });
+    }
+    setBusy(false);
+  }
+
+  async function restyle() {
+    setBusy(true);
+    try {
+      const r = await backend.styleSheet();
+      toast(r.changes.join(' · ') || 'Done.');
     } catch (e) {
       toast(errText(e), { err: true });
     }
@@ -122,6 +135,12 @@ function SheetCard() {
           <button className="btn primary" onClick={() => void setup()} disabled={busy}>
             <Icon name="check" />
             {busy ? 'Working…' : 'Set up sheet'}
+          </button>
+        )}
+        {owner && backend.mode === 'live' && (
+          <button className="btn soft" onClick={() => void restyle()} disabled={busy} title="Colours, widths and drop-downs for every tab. No data is changed.">
+            <Icon name="image" />
+            Apply Clay &amp; Sand style
           </button>
         )}
         {backend.mode === 'live' && (
@@ -317,9 +336,11 @@ export function Settings() {
   const owner = !!staff?.owner;
   return (
     <>
-      <PageHead title="Settings" sub={owner ? 'Your account, employees, rooms and the Google Sheet' : 'Your account'} />
+      <PageHead title="Settings" sub={owner ? 'Your account, look and feel, employees, rooms and the Google Sheet' : 'Your account and look'} />
       <div className="set-grid">
         <Account />
+        <ThemeCard />
+        {owner && <BackgroundCard />}
         <SheetCard />
         {owner && <Staff />}
         {owner && backend.mode === 'live' && <Rooms />}

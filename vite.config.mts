@@ -13,6 +13,10 @@ function apiDuringDev(): Plugin {
     name: 'haveli-api',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
+        if ((req.url ?? '').startsWith('/media/')) {
+          const mod = (await server.ssrLoadModule('/server/media-serve.ts')) as typeof import('./server/media-serve');
+          if (mod.serveMedia(req, res)) return;
+        }
         const m = /^\/api\/([a-z-]+)\/?(\?.*)?$/.exec(req.url ?? '');
         if (!m) return next();
         try {

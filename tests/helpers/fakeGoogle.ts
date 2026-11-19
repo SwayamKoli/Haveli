@@ -57,8 +57,18 @@ export class FakeGoogle {
   /** Formulas written by the app, keyed like "Bookings!G2". */
   formulas: Record<string, string> = {};
   calls: string[] = [];
+  /** How many batchUpdate calls succeeded. */
+  batches = 0;
+  /** When set, adding banded rows is refused with this message (to test that styling never breaks setup). */
+  refuseBanding: string | null = null;
+
   /** Fail the next call to Sheets with this HTTP status. */
   failNextWith: number | null = null;
+
+  /** What the Clay & Sand styling requests did, per tab (the fake keeps the same kind of state Google does). */
+  style: Record<string, FakeStyle> = {};
+  private nextSheetId = 100;
+  private nextBandId = 1;
 
   privateKey: string;
   clientEmail = 'haveli-bot@haveli-test.iam.gserviceaccount.com';
@@ -93,6 +103,103 @@ export class FakeGoogle {
   /** Everything below the header in a tab. */
   rows(tab: string): Cell[][] {
     return this.tabs[tab].slice(1);
+  }
+
+  private styleOf(tab: string): FakeStyle {
+    return (this.style[tab] ??= { sheetId: this.nextSheetId++, banding: [], rules: [], validations: {}, widths: {}, numberFormats: {}, aligned: {}, rowHeights: {} });
+  }
+
+  private tabOfSheetId(id: unknown): string | undefined {
+    return Object.keys(this.tabs).find((t) => this.styleOf(t).sheetId === id);
+  }
+
+  /** Applies the styling requests the way Google would (in order, and refusing what Google refuses). Returns an error message or null. */
+  private applyStyle(r: Record<string, any>): string | null {
+    const kind = Object.keys(r)[0];
+    const q = r[kind];
+    const tabName = (id: unknown) => this.tabOfSheetId(id);
+    switch (kind) {
+      case 'addSheet':
+        return null;
+      case 'updateSheetProperties': {
+        const t = tabName(q.properties.sheetId);
+        if (!t) return 'No sheet with that id.';
+        const st = this.styleOf(t);
+        if (q.properties.tabColorStyle) st.tabColor = JSON.stringify(q.properties.tabColorStyle.rgbColor);
+        if (q.properties.gridProperties?.frozenRowCount !== undefined) st.frozen = q.properties.gridProperties.frozenRowCount;
+        if (q.properties.gridProperties?.hideGridlines !== undefined) st.gridlinesHidden = q.properties.gridProperties.hideGridlines;
+        return null;
+      }
+      case 'repeatCell': {
+        const t = tabName(q.range.sheetId);
+        if (!t) return 'No sheet with that id.';
+        const st = this.styleOf(t);
+        if (q.range.endRowIndex > 5000) return 'Range is outside the grid.';
+        const f = q.cell.userEnteredFormat ?? {};
+        if (q.range.startRowIndex === 0 && q.range.endRowIndex === 1 && f.backgroundColorStyle) st.headerBg = JSON.stringify(f.backgroundColorStyle.rgbColor);
+        if (f.numberFormat) st.numberFormats[q.range.startColumnIndex] = f.numberFormat.pattern;
+        if (f.horizontalAlignment && q.range.endColumnIndex - q.range.startColumnIndex === 1) st.aligned[q.range.startColumnIndex] = f.horizontalAlignment;
+        if (f.textFormat?.fontFamily) st.font = f.textFormat.fontFamily;
+        return null;
+      }
+      case 'updateDimensionProperties': {
+        const t = tabName(q.range.sheetId);
+        if (!t) return 'No sheet with that id.';
+        const st = this.styleOf(t);
+        if (q.range.dimension === 'COLUMNS') st.widths[q.range.startIndex] = q.properties.pixelSize;
+        else st.rowHeights[`${q.range.startIndex}-${q.range.endIndex}`] = q.properties.pixelSize;
+        return null;
+      }
+      case 'deleteBanding': {
+        for (const t of Object.keys(this.style)) {
+          const i = this.style[t].banding.findIndex((b) => b.id === q.bandedRangeId);
+          if (i >= 0) {
+            this.style[t].banding.splice(i, 1);
+            return null;
+          }
+        }
+        return `No banded range with id ${q.bandedRangeId}.`;
+      }
+      case 'addBanding': {
+        const t = tabName(q.bandedRange.range.sheetId);
+        if (!t) return 'No sheet with that id.';
+        const st = this.styleOf(t);
+        if (this.refuseBanding) return this.refuseBanding;
+        if (st.banding.length) return 'You cannot add alternating colors to a range that already has them.';
+        st.banding.push({ id: this.nextBandId++ });
+        return null;
+      }
+      case 'setDataValidation': {
+        const t = tabName(q.range.sheetId);
+        if (!t) return 'No sheet with that id.';
+        this.styleOf(t).validations[q.range.startColumnIndex] = q.rule.condition.values.map((v: { userEnteredValue: string }) => v.userEnteredValue);
+        return null;
+      }
+      case 'addConditionalFormatRule': {
+        const rule = q.rule;
+        const t = tabName(rule.ranges[0].sheetId);
+        if (!t) return 'No sheet with that id.';
+        const c = rule.booleanRule.condition;
+        this.styleOf(t).rules.splice(q.index ?? 0, 0, {
+          startCol: rule.ranges[0].startColumnIndex,
+          endCol: rule.ranges[0].endColumnIndex,
+          type: c.type,
+          value: c.values[0].userEnteredValue,
+          bg: rule.booleanRule.format.backgroundColorStyle ? JSON.stringify(rule.booleanRule.format.backgroundColorStyle.rgbColor) : undefined,
+        });
+        return null;
+      }
+      case 'deleteConditionalFormatRule': {
+        const t = tabName(q.sheetId);
+        if (!t) return 'No sheet with that id.';
+        const list = this.styleOf(t).rules;
+        if (!list[q.index]) return 'No rule at that index.';
+        list.splice(q.index, 1);
+        return null;
+      }
+      default:
+        return `Unknown request: ${kind}`;
+    }
   }
 
   private json(status: number, body: unknown): Response {
@@ -143,16 +250,29 @@ export class FakeGoogle {
     const body = init.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
 
     if (rest === ':batchUpdate' && method === 'POST') {
-      for (const r of (body.requests as { addSheet?: { properties: { title: string } } }[]) ?? []) {
-        const title = r.addSheet?.properties.title;
+      for (const r of (body.requests as Record<string, any>[]) ?? []) {
+        const title = r.addSheet?.properties.title as string | undefined;
         if (title) this.tabs[title] = [[]];
+        const problem = this.applyStyle(r);
+        if (problem) return this.json(400, { error: { message: problem } });
       }
+      this.batches++;
       return this.json(200, { replies: [] });
     }
     if (rest === '' && method === 'GET') {
       return this.json(200, {
         properties: { title: 'Haveli (test)' },
-        sheets: Object.keys(this.tabs).map((title) => ({ properties: { title } })),
+        sheets: Object.keys(this.tabs).map((title) => {
+          const st = this.styleOf(title);
+          return {
+            properties: { title, sheetId: st.sheetId, gridProperties: { rowCount: 1000 } },
+            bandedRanges: st.banding.map((b) => ({ bandedRangeId: b.id })),
+            conditionalFormats: st.rules.map((r) => ({
+              ranges: [{ startColumnIndex: r.startCol, endColumnIndex: r.endCol }],
+              booleanRule: { condition: { type: r.type, values: [{ userEnteredValue: r.value }] } },
+            })),
+          };
+        }),
       });
     }
 
@@ -206,4 +326,20 @@ export class FakeGoogle {
 
     return this.json(404, { error: { message: `fake google: unhandled ${method} ${rest}` } });
   }
+}
+
+export interface FakeStyle {
+  sheetId: number;
+  tabColor?: string;
+  frozen?: number;
+  gridlinesHidden?: boolean;
+  headerBg?: string;
+  font?: string;
+  banding: { id: number }[];
+  rules: { startCol: number; endCol: number; type: string; value: string; bg?: string }[];
+  validations: Record<number, string[]>;
+  widths: Record<number, number>;
+  numberFormats: Record<number, string>;
+  aligned: Record<number, string>;
+  rowHeights: Record<string, number>;
 }

@@ -29,7 +29,7 @@ export function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
-const HUES = ['#a8d8d2', '#bcc7f2', '#f1d2a6', '#d9bdea', '#b0dcab', '#f0bdb6'];
+const HUES = ['#F0C4A4', '#EBD3A0', '#C3D9B8', '#E9B5A2', '#E6BFCB', '#D2C6E2'];
 
 export function hue(s: string): string {
   let h = 0;

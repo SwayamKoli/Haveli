@@ -17,8 +17,11 @@
  *   GET  /api/health           connection check shown in Settings
  *   GET  /api/staff-list       employees
  *   POST /api/staff-save       add an employee / change name, role, password, on-off
- *   POST /api/sheet-setup      add the tabs and columns the app needs
+ *   POST /api/sheet-setup      add the tabs and columns the app needs (and give them the Clay & Sand look)
+ *   POST /api/sheet-style      give every tab the Clay & Sand look again (colours only, no data is touched)
  *   POST /api/rooms-generate   add many rooms at once (floors x rooms per floor)
+ *   POST /api/background-set     plain theme or the drawn hotel scene behind the website
+ *   POST /api/background-upload  a photo or a short video behind the website (raw file as the body)
  */
 import { configProblems, getConfig, hotelName } from './_lib/env';
 import { HttpError, clientIp, isHttps, readBody } from './_lib/http';
@@ -33,6 +36,7 @@ import {
   parseStaffSave,
   parseStageInput,
 } from './_lib/input';
+import * as media from './_lib/media';
 import * as repo from './_lib/repo';
 import {
   clearCookie,
@@ -84,12 +88,12 @@ async function stillAllowed(who: SessionUser): Promise<boolean> {
 async function sessionInfo(req: ApiRequest): Promise<SessionInfo> {
   const problems = configProblems();
   if (problems.length) {
-    return { authenticated: false, configured: false, missing: problems, mode: 'live', hotel: hotelName(), staff: null };
+    return { authenticated: false, configured: false, missing: problems, mode: 'live', hotel: hotelName(), staff: null, background: media.readBackground() };
   }
   const cfg = getConfig();
   let who = readSession(req, cfg.sessionSecret);
   if (who && !(await stillAllowed(who))) who = null;
-  return { authenticated: !!who, configured: true, missing: [], mode: 'live', hotel: cfg.hotelName, staff: who ? staffInfo(who) : null };
+  return { authenticated: !!who, configured: true, missing: [], mode: 'live', hotel: cfg.hotelName, staff: who ? staffInfo(who) : null, background: media.readBackground() };
 }
 
 async function login(ctx: { req: ApiRequest; res: ApiResponse }): Promise<SessionInfo> {
@@ -123,7 +127,7 @@ async function login(ctx: { req: ApiRequest; res: ApiResponse }): Promise<Sessio
   }
   clearLoginFailures(ip);
   res.setHeader('Set-Cookie', sessionCookie(createToken(cfg.sessionSecret, user), isHttps(req)));
-  return { authenticated: true, configured: true, missing: [], mode: 'live', hotel: cfg.hotelName, staff: staffInfo(user) };
+  return { authenticated: true, configured: true, missing: [], mode: 'live', hotel: cfg.hotelName, staff: staffInfo(user), background: media.readBackground() };
 }
 
 const ROUTES: Record<string, Route> = {
@@ -190,6 +194,25 @@ const ROUTES: Record<string, Route> = {
     run: async ({ req, by }) => ({ staff: await repo.saveStaff(parseStaffSave(readBody(req)), by) }),
   },
   'sheet-setup': { method: 'POST', auth: 'owner', run: () => repo.setupSheet() },
+  'sheet-style': { method: 'POST', auth: 'owner', run: () => repo.styleSheet() },
+  'background-set': {
+    method: 'POST',
+    auth: 'owner',
+    run: ({ req }) => {
+      const kind = readBody(req).kind;
+      if (kind !== 'none' && kind !== 'scene') throw new HttpError(400, 'Choose the plain theme or the hotel scene. Photos and videos are uploaded.');
+      return { background: media.setSimpleBackground(kind) };
+    },
+  },
+  'background-upload': {
+    method: 'POST',
+    auth: 'owner',
+    run: async ({ req }) => {
+      const q = req.query.kind;
+      const kind = Array.isArray(q) ? q[0] : (q ?? '');
+      return { background: await media.saveUpload(kind, req.raw ?? Buffer.alloc(0)) };
+    },
+  },
   'rooms-generate': { method: 'POST', auth: 'owner', run: ({ req }) => repo.generateRooms(parseRoomsGenerate(readBody(req))) },
 };
 

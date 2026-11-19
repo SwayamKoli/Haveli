@@ -7,6 +7,8 @@ export interface ApiRequest {
   headers: Record<string, string | string[] | undefined>;
   query: Record<string, string | string[] | undefined>;
   body?: unknown;
+  /** The untouched request body, for uploads (a photo or a video). */
+  raw?: Buffer;
 }
 
 export interface ApiResponse {

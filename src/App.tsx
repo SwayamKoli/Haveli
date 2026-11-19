@@ -12,6 +12,9 @@ import { animatePage, motionOn } from './lib/motion';
 import { useRoute } from './lib/route';
 import type { Page } from './lib/route';
 import { arrivalsToday, attentionRooms, departuresToday, roomState } from './lib/selectors';
+import { Backdrop, ThemeSwitch } from './appearance';
+import { setBackground } from './lib/background';
+import { applyTheme, currentTheme, themeFor } from './lib/theme';
 import { Layers } from './modals';
 import { Analytics } from './pages/Analytics';
 import { Bookings } from './pages/Bookings';
@@ -90,6 +93,7 @@ function Login({ backend, session, onSignedIn }: { backend: Backend; session: Se
 
   return (
     <div className="login-wrap">
+      <div className="login-corner"><ThemeSwitch username="" /></div>
       <form className="modal login-card" onSubmit={submit} aria-labelledby="lt" noValidate>
         <div className="logo" style={{ marginBottom: 18 }}>
           <i><Icon name="hotel" /></i>
@@ -361,7 +365,7 @@ function Topbar({ go, onMenu, searchRef }: { go: (p: Page) => void; onMenu: () =
                 ))}
                 {rooms.map((r) => (
                   <button key={r.no} data-sr={r.no} onClick={() => { setUi({ rq: String(r.no), rst: 'All', rfl: 'All' }); go('rooms'); setQ(''); setOpen(false); }}>
-                    <span className="av" style={{ background: '#cfe5ee' }}><Icon name="bed" size={15} /></span>
+                    <span className="av" style={{ background: '#EBD3A0' }}><Icon name="bed" size={15} /></span>
                     <span>Room {r.no}</span>
                     <small>{r.type} · {ROOM_STATE_LABEL[roomState(r, data.bookings)]}</small>
                   </button>
@@ -374,6 +378,7 @@ function Topbar({ go, onMenu, searchRef }: { go: (p: Page) => void; onMenu: () =
         )}
       </div>
       <div className="tspace" />
+      <ThemeSwitch username={staff?.username ?? ''} />
       <Bell go={go} />
       <button className="me" id="meBtn" onClick={() => go('settings')} aria-label={`${name}. Open settings`} title="Settings">
         <div className="av" style={{ background: hue(name) }}>{initials(name)}</div>
@@ -414,36 +419,16 @@ function Shell() {
     const down = (e: MouseEvent) => {
       if (!(e.target as Element).closest?.('.menu')) setMenu(null);
     };
-    /* The glow that follows the pointer: at most one update per frame, and only on the card under it. */
-    let raf = 0;
-    let last: PointerEvent | null = null;
-    const paint = () => {
-      raf = 0;
-      const e = last;
-      if (!e) return;
-      const t = (e.target as Element).closest?.('.stat,.card,.kcard,.room') as HTMLElement | null;
-      if (!t) return;
-      const r = t.getBoundingClientRect();
-      t.style.setProperty('--mx', `${e.clientX - r.left}px`);
-      t.style.setProperty('--my', `${e.clientY - r.top}px`);
-    };
-    const move = (e: PointerEvent) => {
-      last = e;
-      if (!raf) raf = window.requestAnimationFrame(paint);
-    };
     const resize = () => {
       if (!mobileQuery()) setOpen(false);
     };
     document.addEventListener('keydown', key);
     document.addEventListener('mousedown', down);
-    document.addEventListener('pointermove', move, { passive: true });
     window.addEventListener('resize', resize);
     return () => {
       document.removeEventListener('keydown', key);
       document.removeEventListener('mousedown', down);
-      document.removeEventListener('pointermove', move);
       window.removeEventListener('resize', resize);
-      if (raf) window.cancelAnimationFrame(raf);
     };
   }, [setMenu]);
 
@@ -497,11 +482,24 @@ export default function App() {
     backend.session().then(setSession).catch((e) => setError(errText(e)));
   }, [backend, attempt]);
 
+  /* Whoever is signed in gets the theme they left the website in (dark the first time); everyone sees the owner's background. */
+  const who = session?.authenticated ? session.staff?.username : undefined;
   useEffect(() => {
-    const out = () => setSession((s) => (s ? { ...s, authenticated: false, staff: null } : s));
+    if (session) setBackground(session.background);
+  }, [session]);
+  useEffect(() => {
+    if (who) applyTheme(themeFor(who) ?? currentTheme(), who);
+  }, [who]);
+
+  useEffect(() => {
+    const out = () => {
+      setSession((s) => (s ? { ...s, authenticated: false, staff: null } : s));
+      // Ask again, so the sign-in screen shows the owner's current background and not an old one.
+      backend.session().then(setSession).catch(() => undefined);
+    };
     window.addEventListener('haveli:unauthorized', out);
     return () => window.removeEventListener('haveli:unauthorized', out);
-  }, []);
+  }, [backend]);
 
   useEffect(() => {
     if (session?.hotel) document.title = `${session.hotel} · ${PRODUCT}`;
@@ -511,6 +509,7 @@ export default function App() {
     void backend.logout().finally(() => {
       window.location.hash = '';
       setSession((s) => (s ? { ...s, authenticated: false, staff: null } : s));
+      backend.session().then(setSession).catch(() => undefined);
     });
   };
 
@@ -537,7 +536,7 @@ export default function App() {
 
   return (
     <>
-      <div className="orbs" aria-hidden="true"><i /><i /><i /><i /></div>
+      <Backdrop view={session?.authenticated ? 'app' : 'login'} />
       {body}
       {intro && <Intro onDone={endIntro} />}
     </>

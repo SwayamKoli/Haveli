@@ -23,6 +23,7 @@ import type {
 } from '../shared/types';
 import { ApiError } from './lib/api';
 import type { Backend } from './lib/api';
+import { setBackground } from './lib/background';
 import { errText, inr } from './lib/format';
 
 export interface Ui {
@@ -134,6 +135,7 @@ export function StoreProvider({ backend, staff, hotel, onLogout, children }: { b
     try {
       const fresh = await backend.load();
       setData(fresh);
+      setBackground(fresh.background);
       setLoadedAt(Date.now());
       setLoadError(null);
     } catch (e) {

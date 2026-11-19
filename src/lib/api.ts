@@ -1,4 +1,5 @@
 import type {
+  BackgroundInfo,
   Booking,
   DataBundle,
   EditBookingInput,
@@ -37,7 +38,13 @@ export interface Backend {
   health(): Promise<HealthReport>;
   listStaff(): Promise<{ staff: StaffMember[] }>;
   saveStaff(input: StaffSaveInput): Promise<{ staff: StaffMember[] }>;
-  setupSheet(): Promise<{ changes: string[] }>;
+  setupSheet(): Promise<{ changes: string[]; style?: string }>;
+  /** Gives every tab of the Google Sheet the Clay & Sand look. Colours only; no data is touched. */
+  styleSheet(): Promise<{ changes: string[] }>;
+  /** Plain theme or the drawn hotel scene. */
+  setBackground(kind: 'none' | 'scene'): Promise<{ background: BackgroundInfo }>;
+  /** A photo or a short video, shown to everyone. Replaces whatever was there before. */
+  uploadBackground(kind: 'image' | 'video', file: File): Promise<{ background: BackgroundInfo }>;
   /** Asks for the owner password every time. The link is never sent to the browser otherwise. */
   sheetLink(password: string): Promise<{ url: string }>;
 }
@@ -53,15 +60,15 @@ export class ApiError extends Error {
   }
 }
 
-async function call<T>(action: string, opts: { method?: 'GET' | 'POST'; body?: unknown; quiet401?: boolean } = {}): Promise<T> {
+async function call<T>(action: string, opts: { method?: 'GET' | 'POST'; body?: unknown; file?: File; quiet401?: boolean } = {}): Promise<T> {
   const method = opts.method ?? 'GET';
   let res: Response;
   try {
     res = await fetch(`/api/${action}`, {
       method,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'haveli' },
-      body: method === 'POST' ? JSON.stringify(opts.body ?? {}) : undefined,
+      headers: { 'Content-Type': opts.file ? 'application/octet-stream' : 'application/json', 'X-Requested-With': 'haveli' },
+      body: opts.file ?? (method === 'POST' ? JSON.stringify(opts.body ?? {}) : undefined),
     });
   } catch {
     throw new ApiError(0, 'Cannot reach the Haveli server. Check that it is running and try again.');
@@ -99,6 +106,9 @@ export function makeLiveBackend(): Backend {
     listStaff: () => call('staff-list'),
     saveStaff: (input) => post('staff-save', input),
     setupSheet: () => post('sheet-setup'),
+    styleSheet: () => post('sheet-style'),
+    setBackground: (kind) => post('background-set', { kind }),
+    uploadBackground: (kind, file) => call(`background-upload?kind=${kind}`, { method: 'POST', file }),
     sheetLink: (password) => call('sheet-link', { method: 'POST', body: { password }, quiet401: true }),
   };
 }

@@ -49,6 +49,13 @@ The first time, it asks a few questions (hotel name, your owner password, the sh
 - **Payments and refunds:** **⋯** menu → *Payment or refund*. The dashboard's *Money received* is the money actually taken each day.
 - **Who did what:** every booking and payment records the employee who made it. The bell at the top right lists today's arrivals, check-outs, dues and rooms that need attention.
 
+## Look, dark/light and background
+
+- The **sun/moon button** beside the bell switches between the dark and light look. Haveli remembers each person's choice.
+- **Owner only:** Settings → **Website background**. Choose *Plain* (the default), the drawn *Hotel scene*, your own *Photo* (JPG, PNG or WebP, up to 5 MB) or a *Video* (MP4 or WebM, **15 seconds or less**, up to 20 MB). Only one is used at a time and everyone sees it. For a smooth loop, pick a clip that starts and ends on the same view.
+- The file is kept in the **media** folder next to Haveli. Do not delete that folder.
+- **Google Sheet look:** Settings → **Apply Clay & Sand style** gives every tab the same colours, dropdowns and ₹ formats. It never changes your data.
+
 ## Passwords and who can see what
 
 | Who | Can do |
@@ -76,6 +83,7 @@ Then open `http://<this computer's address>:3000` on the phone (for example `htt
 
 - Your data is the Google Sheet. Google keeps a version history (*File → Version history*).
 - For an extra copy, use *File → Download → Microsoft Excel* now and then.
+- Back up the **media** folder (your background file) together with `.env`. If it is lost, the background goes back to *Plain*; nothing else is affected.
 - Keep `.env` and the key file private. If the key file ever leaks, delete the key in Google Cloud and make a new one.
 - Staff are signed out automatically after 12 hours.
 
@@ -91,4 +99,4 @@ Then open `http://<this computer's address>:3000` on the phone (for example `htt
 
 ## Updating
 
-When you receive a new version, close Haveli, unzip the new folder, and copy your old `.env` file into it. Your data stays in the Google Sheet. After starting, the owner opens Settings and presses **Set up sheet** once, in case the new version adds columns.
+When you receive a new version, close Haveli, unzip the new folder, and copy your old `.env` file and `media` folder into it. Your data stays in the Google Sheet. After starting, the owner opens Settings and presses **Set up sheet** once, in case the new version adds columns.

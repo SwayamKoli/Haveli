@@ -42,6 +42,9 @@ export interface CallOptions {
   /** Leave out the anti-forgery header on purpose. */
   noCsrf?: boolean;
   ip?: string;
+  /** The untouched bytes of an upload, and extra query values (such as kind=image). */
+  raw?: Buffer;
+  query?: Record<string, string>;
 }
 
 export async function call(action: string, opts: CallOptions = {}): Promise<Reply> {
@@ -49,7 +52,7 @@ export async function call(action: string, opts: CallOptions = {}): Promise<Repl
   const headers: Record<string, string> = { 'x-forwarded-for': opts.ip ?? '10.0.0.1', 'x-forwarded-proto': 'https' };
   if (method === 'POST' && !opts.noCsrf) headers['x-requested-with'] = 'haveli';
   if (opts.cookie) headers.cookie = opts.cookie;
-  const req: ApiRequest = { method, headers, query: { action }, body: opts.body };
+  const req: ApiRequest = { method, headers, query: { action, ...opts.query }, body: opts.body, raw: opts.raw };
 
   const out: Reply = { status: 200, body: undefined, headers: {} };
   const res: ApiResponse = {

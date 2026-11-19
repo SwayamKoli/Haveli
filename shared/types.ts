@@ -89,6 +89,28 @@ export interface Payment {
   note: string;
 }
 
+/** The picture or video behind the website. Only the owner can change it; everyone sees the same one. */
+export type BackgroundKind = 'none' | 'scene' | 'image' | 'video';
+
+export interface BackgroundInfo {
+  kind: BackgroundKind;
+  /** Where the file is served from (image and video only). Changes with every upload, so browsers never show a stale one. */
+  url: string | null;
+  /** Counts up with every change. */
+  version: number;
+}
+
+export const NO_BACKGROUND: BackgroundInfo = { kind: 'none', url: null, version: 0 };
+
+/** The limits for the background, shared by the server (which enforces them) and the settings screen (which checks first). */
+export const BACKGROUND_LIMITS = {
+  imageBytes: 5 * 1024 * 1024,
+  videoBytes: 20 * 1024 * 1024,
+  videoSeconds: 15,
+  imageTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  videoTypes: ['video/mp4', 'video/webm'],
+} as const;
+
 export interface DataBundle {
   rooms: Room[];
   guests: Guest[];
@@ -101,6 +123,7 @@ export interface DataBundle {
   /** True when the sheet is missing tabs or columns the app now needs (owner can fix it in Settings). */
   setupNeeded: boolean;
   mode: 'live' | 'demo';
+  background: BackgroundInfo;
 }
 
 export interface StaffInfo {
@@ -132,6 +155,8 @@ export interface SessionInfo {
   /** Shown on the sign-in screen and in the sidebar. */
   hotel: string;
   staff: StaffInfo | null;
+  /** Shown behind the sign-in screen too, so it is part of the public session answer. */
+  background: BackgroundInfo;
 }
 
 /** What the booking form collects (the same fields for a new booking and for an edit). */
