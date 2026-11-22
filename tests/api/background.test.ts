@@ -35,9 +35,9 @@ afterEach(() => {
 const upload = (kind: string, raw: Buffer, cookie: string | undefined = owner) => call('background-upload', { cookie, raw, query: { kind } });
 const files = () => readdirSync(dir).filter((f) => f.startsWith('bg-'));
 async function staffCookie() {
-  const r = await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha Verma', role: 'Reception', active: true, password: 'asha-pass-1' } });
+  const r = await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha Verma', role: 'Reception', active: true, password: 'maple-river-41' } });
   assert.equal(r.status, 200, JSON.stringify(r.body));
-  return signIn('asha', 'asha-pass-1');
+  return signIn('asha', 'maple-river-41');
 }
 
 describe('video length reading', () => {

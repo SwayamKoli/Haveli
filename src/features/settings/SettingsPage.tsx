@@ -7,6 +7,7 @@ import { Account } from './Account';
 import { BackgroundCard } from './BackgroundCard';
 import { Employees } from './Employees';
 import { RoomSetup } from './RoomSetup';
+import { SecurityCard } from './SecurityCard';
 import { SheetCard } from './SheetCard';
 import { ThemeCard } from './ThemeCard';
 
@@ -15,13 +16,14 @@ export function SettingsPage() {
   const owner = !!staff?.owner;
   return (
     <>
-      <PageHead title="Settings" sub={owner ? 'Your account, look and feel, employees, rooms and the Google Sheet' : 'Your account and look'} />
+      <PageHead title="Settings" sub={owner ? 'Your account, look and feel, employees, security, rooms and the Google Sheet' : 'Your account and look'} />
       <div className="set-grid">
         <Account />
         <ThemeCard />
         {owner && <BackgroundCard />}
         <SheetCard />
         {owner && <Employees />}
+        {owner && <SecurityCard />}
         {owner && backend.mode === 'live' && <RoomSetup />}
         {owner && backend.mode === 'demo' && <RoomSetup />}
       </div>

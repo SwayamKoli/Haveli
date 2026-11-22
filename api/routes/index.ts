@@ -7,6 +7,7 @@ import { bookingRoutes } from './bookings';
 import type { Route } from './context';
 import { dataRoutes } from './data';
 import { roomRoutes } from './rooms';
+import { securityRoutes } from './security';
 import { sessionRoutes } from './session';
 import { sheetRoutes } from './sheet';
 import { staffRoutes } from './staff';
@@ -18,5 +19,6 @@ export const ROUTES: Record<string, Route> = {
   ...roomRoutes,
   ...staffRoutes,
   ...sheetRoutes,
+  ...securityRoutes,
   ...backgroundRoutes,
 };

@@ -74,7 +74,7 @@ export function Employees() {
               </select>
             </Field>
             <Field id="s_pw" label={isNew ? 'Password' : 'New password (leave empty to keep)'} error={errors.password}>
-              <input id="s_pw" type="text" autoComplete="off" value={form.password} onChange={(e) => set('password', e.target.value)} placeholder={isNew ? 'At least 6 characters' : 'Unchanged'} />
+              <input id="s_pw" type="text" autoComplete="off" value={form.password} onChange={(e) => set('password', e.target.value)} placeholder={isNew ? 'At least 8 characters' : 'Unchanged'} />
             </Field>
             <label className="check full">
               <input type="checkbox" checked={form.active} onChange={(e) => set('active', e.target.checked)} />

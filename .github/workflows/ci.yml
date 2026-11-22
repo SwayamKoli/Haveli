@@ -13,3 +13,6 @@ jobs:
         continue-on-error: true
       - run: npm test
       - run: npm run build:demo
+      # Known vulnerabilities in the packages that run on the server. Reported, not blocking: a new advisory should not stop an unrelated change.
+      - run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

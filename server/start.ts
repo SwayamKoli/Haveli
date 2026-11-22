@@ -10,26 +10,26 @@ import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { handleApi } from './adapt';
+import { createApp } from './app';
 import { loadDotEnv } from './dotenv';
-import { serveMedia } from './media-serve';
 import {
   applyHostingDefaults,
-  commonHeaders,
   hostedOn,
   isPublic,
   listenHost,
   listenPort,
+  publicProblems,
   publicWarnings,
 } from './network';
-import { serveStatic } from './static';
+import { hardenServer, looseEnvFiles } from './security';
 
 // Works both from source (server/start.ts, run by tsx) and as the bundled server.mjs in a customer folder.
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 // .env: the folder the app was started from first, then next to this file, then the project root.
 // Variables already set by the computer or the hosting service win over the file.
-for (const dir of [process.cwd(), HERE, resolve(HERE, '..')]) loadDotEnv(join(dir, '.env'));
+const ENV_FILES = [...new Set([process.cwd(), HERE, resolve(HERE, '..')].map((dir) => join(dir, '.env')))];
+for (const f of ENV_FILES) loadDotEnv(f);
 applyHostingDefaults();
 
 // dist/: next to this file (customer folder), or in the project root (source checkout), or where it was started.
@@ -37,37 +37,20 @@ const DIST = [join(HERE, 'dist'), resolve(HERE, '..', 'dist'), resolve(process.c
 const PORT = listenPort();
 const HOST = listenHost();
 
+const problems = publicProblems(HOST);
+if (problems.length) {
+  for (const p of problems) console.error(`Not started: ${p}`);
+  process.exit(1);
+}
+for (const f of looseEnvFiles(ENV_FILES)) console.warn(`Warning: ${f} can be read by other users of this computer. Run: chmod 600 "${f}"`);
+
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error('The website files (the dist folder) are missing. Developers: run "npm run build" first. Customers: unzip the whole folder again.');
   process.exit(1);
 }
 
-const server = createServer((req, res) => {
-  commonHeaders(req, res);
-  const url = new URL(req.url ?? '/', 'http://localhost');
-
-  // For hosting services and uptime checks: no sign-in, no data.
-  if (url.pathname === '/health') {
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-store');
-    res.end('ok');
-    return;
-  }
-
-  const api = /^\/api\/([a-z-]+)\/?$/.exec(url.pathname);
-  if (api) {
-    handleApi(req, res, api[1]).catch((e) => {
-      console.error(e);
-      if (!res.headersSent) res.statusCode = 500;
-      res.end();
-    });
-    return;
-  }
-
-  if (serveMedia(req, res)) return;
-  serveStatic(req, res, DIST);
-});
-
+const server = createServer(createApp(DIST, HOST));
+hardenServer(server);
 server.listen(PORT, HOST, () => {
   const where = hostedOn();
   if (isPublic(HOST)) {

@@ -4,13 +4,14 @@ Bookings, rooms, guests, payments and a daily dashboard for a hotel. The data li
 
 **Try it first, no setup:** `npm install`, then `npm run dev:demo`. Made-up data, nothing is saved.
 
-Contents: [Features](#features) · [Set up](#set-up) · [Use it from anywhere](#use-it-from-anywhere-phone-tablet-any-browser) · [Daily use](#daily-use) · [Sheet tabs](#sheet-tabs) · [Project structure](#project-structure) · [Commands](#commands) · [Troubleshooting](#troubleshooting) · [Selling it](#selling-it-to-hotels-and-franchises)
+Contents: [Features](#features) · [Set up](#set-up) · [Use it from anywhere](#use-it-from-anywhere-phone-tablet-any-browser) · [Security](#security) · [Daily use](#daily-use) · [Sheet tabs](#sheet-tabs) · [Project structure](#project-structure) · [Commands](#commands) · [Troubleshooting](#troubleshooting) · [Selling it](#selling-it-to-hotels-and-franchises)
 
 ## Features
 
 - **Bookings** on a board (Reserved → Checked in → Checked out, or Cancelled), several rooms per booking, discount in ₹ or %, edit after saving, double booking blocked.
 - **Payments and refunds** in a ledger; the dashboard shows money actually received.
 - **Every person has their own login.** The owner adds employees; the owner password opens any employee's account (recorded as "Name (via owner)"). Every booking and payment records who took it.
+- **Protected against break-ins:** optional owner 2-step code, guessing slowed down, sign-ins that can be cancelled, strict browser rules, a security log. See [Security](#security).
 - **The hotel's own name** is the logo on the sidebar, sign-in screen, welcome animation and browser tab. It is set in `.env` (`HOTEL_NAME`), so each hotel that buys the app sees its own name.
 - **Dark / light** switch beside the bell; each person's choice is remembered.
 - **Website background** (owner only, same for everyone): plain, a drawn hotel scene, a photo (up to 5 MB) or a looping video (15 seconds or less, up to 20 MB).
@@ -41,11 +42,12 @@ Or copy `.env.example` to `.env` and fill in by hand:
 |---|---|
 | `SHEET_ID` | The sheet's address, or the long id between `/d/` and `/edit`. |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | The whole downloaded key file, pasted inside single quotes. |
-| `OWNER_PASSWORD` | The owner's password (8+ characters; **12+ if the app is on the internet**). |
-| `SESSION_SECRET` | Long random text (24+ characters): `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `OWNER_PASSWORD` | The owner's password. 8+ characters and not a common one; **12+ if the app is on the internet** (the server refuses to start otherwise). |
+| `SESSION_SECRET` | Long random text (32+ characters): `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `HOTEL_NAME` | **The hotel's name**, shown as the logo everywhere. Restart after changing it. |
 | `OWNER_USERNAME`, `OWNER_NAME`, `HOTEL_TIMEZONE` | Optional. Defaults: `owner`, `Owner`, `Asia/Kolkata`. |
-| `PORT`, `HOST`, `TRUST_PROXY`, `MEDIA_DIR` | Optional, for running on the web: see the next section. |
+| `OWNER_TOTP_SECRET` | The owner's **2-step code** key. Added for you by `npm run setup` (or `npm run setup -- --2fa`). See [Security](#security). |
+| `PORT`, `HOST`, `TRUST_PROXY`, `ALLOWED_HOSTS`, `MEDIA_DIR` | Optional, for running on the web: see the next section. |
 
 `.env` is ignored by git. If the key ever leaks, delete it in Google Cloud and create a new one.
 
@@ -69,9 +71,10 @@ The app re-reads the sheet every 45 seconds, so edits made directly in Google Sh
 By default the app listens on this computer only. To let the owner open it from any device, it must be reachable at an **https address**. Three ways, easiest first. Whichever you pick, the rules are the same:
 
 - **Use HTTPS only.** Over plain http, passwords travel readable. Never open the port to the internet directly.
-- **Use a long owner password** (12+ characters). The server warns at start if it is short.
+- **Use a long owner password** (12+ characters) and **switch on the owner 2-step code**. The server refuses to start in public with a shorter password and warns when the 2-step code is off.
 - **Run exactly one copy** of the app per sheet.
-- Set `TRUST_PROXY=1` when a host, tunnel or proxy sits in front (it makes sign-in limits and the secure cookie work on the visitor's real address). Hosting services below are detected automatically.
+- Set `TRUST_PROXY=1` when a host, tunnel or proxy sits in front (it makes sign-in limits and the secure cookie work on the visitor's real address, and sends anyone who arrives over plain http to https). Hosting services below are detected automatically.
+- Optional: `ALLOWED_HOSTS=hotel.example.com` makes the app answer only to that website name.
 - `GET /health` answers `ok` with no sign-in, for uptime checks.
 - The background file lives in `media/` (or `MEDIA_DIR`). On a host whose disk is wiped on every restart, attach a persistent disk and point `MEDIA_DIR` at it, otherwise the background resets to plain. Nothing else is stored on disk.
 
@@ -83,7 +86,7 @@ Example with **Render** (https://render.com). The repository must be on GitHub (
 2. Build command: `npm install --include=dev && npm run build`
 3. Start command: `npm start`
 4. Health check path: `/health`
-5. **Environment** → add `SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` (paste the whole key file), `OWNER_PASSWORD`, `SESSION_SECRET`, `HOTEL_NAME`, `HOTEL_TIMEZONE`. No `.env` file is needed there.
+5. **Environment** → add `SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` (paste the whole key file), `OWNER_PASSWORD`, `SESSION_SECRET`, `HOTEL_NAME`, `HOTEL_TIMEZONE`, and `OWNER_TOTP_SECRET` (run `npm run setup -- --2fa` on your own computer to make one, and put the same key in the host's settings). No `.env` file is needed there.
 6. Optional, for the background: add a **Disk** (paid plans) mounted at e.g. `/var/data` and set `MEDIA_DIR=/var/data/media`.
 7. Deploy. Render gives an `https://…onrender.com` address. Free plans may sleep when idle (the first request is slow); paid plans do not.
 
@@ -116,13 +119,49 @@ No server to rent; the computer must stay on. Free Cloudflare account and a doma
 
 `npm run build:demo` makes `dist-demo/`, a static copy running on made-up data. Upload that folder to any static host (Netlify, Cloudflare Pages, GitHub Pages). It has no server and no real data.
 
+## Security
+
+What the app does on its own, what you must do, and what it cannot do.
+
+**Built in**
+
+| Protection | What it does |
+|---|---|
+| Passwords stored scrambled | Employee passwords are salted scrypt hashes (2^15 rounds). Nobody, including you, can read them back. |
+| Password rules | Employees: 8+ characters, not a common password, not the username or name. The owner password gets the same check. |
+| Guessing is slowed | 8 wrong passwords from one address block it for 10 minutes. Guesses at one username are checked one at a time and answers slow down to 10 seconds, however many addresses they come from. A ceiling on requests per address. |
+| Owner 2-step code (optional) | Signing in with the owner password also needs the 6-digit code from an authenticator app. A code works once. |
+| Sign-ins can be cancelled | Signing out cancels that cookie on the server, so a copied cookie stops working. **Settings → Security → Sign out everyone** ends every sign-in on every device. Changing a password or the 2-step key does the same for that account. |
+| Safe cookie | HttpOnly, SameSite=Strict, and on https the `__Host-` Secure form that other websites cannot overwrite. 12 hours, then sign in again. |
+| Strict browser rules | A Content-Security-Policy lets the page load scripts and data only from itself, forbids framing, and switches off camera, microphone and location. HSTS on https. |
+| Forged requests | Every change needs a header only the app sends, and requests that a browser says came from another website are refused. |
+| Only the right website name | On your own computer, other names pointing at it (a DNS-rebinding attack) are refused. `ALLOWED_HOSTS` does the same for a public site. |
+| Plain http is not served | Behind a proxy, a visitor on http is sent to https before anything is read. |
+| Uploads | A background file is accepted only from a signed-in owner, one at a time, a few per 10 minutes, and is checked again for real file type, size and video length. It is shown, never run. |
+| Time and size limits | Slow or oversized connections are cut off; a damaged request cannot crash the server. |
+| Sheet formulas | Typed text is stored as plain text, so `=HYPERLINK(...)` cannot run. |
+| Security log | Settings → Security lists sign-ins, wrong passwords (with the address), blocked attempts, employee changes and sheet-link use. Every event is also printed, so a hosting service keeps the full history. |
+
+**Switch on the 2-step code (recommended, important on the web).** Run `npm run setup -- --2fa` (customer folder: `node setup.mjs --2fa`). It shows a key to add in an authenticator app (Google Authenticator, Microsoft Authenticator, Authy, 1Password: "Add account → Enter a setup key"), checks the first code and saves `OWNER_TOTP_SECRET` in `.env`. Restart the app. Keep a note of the key. Lost phone: delete the `OWNER_TOTP_SECRET` line in `.env`, restart, and run the command again.
+
+**Your checklist**
+
+1. Use https only, and a long owner password (a few unrelated words, 12+ characters).
+2. Switch on the 2-step code.
+3. Share the Google Sheet with the robot account only, and keep the sheet and the key file private. Employees work inside the app.
+4. Keep `.env`, `media/` and the key out of git (the repository stays **private**) and out of email and chat. Never paste `.env` anywhere.
+5. Switch an employee off the day they leave. Press **Sign out everyone** if a phone or laptop is lost.
+6. Look at Settings → Security now and then. Many wrong-password lines from strange addresses mean someone is guessing.
+7. Keep Node.js and the packages up to date: run `npm audit` and `npm update` now and then (GitHub's Dependabot is set up in `.github/dependabot.yml` for repositories on GitHub).
+
+**What it cannot do:** protect a computer that is already infected or shared with strangers, stop someone who has the owner password *and* the 2-step key, or keep working after the Google key leaks (delete that key in Google Cloud and make a new one). The security log is in memory, so a restart clears it (the hosting log keeps it). One server instance only.
+
 ## Daily use
 
 - **Rooms** show *Occupied* automatically while a guest is checked in; you set *Available*, *Cleaning* or *Maintenance*. Checking out puts the room into *Cleaning*.
 - **Payments** are separate from stages: `…` → *Payment or refund*. Each is a dated row in the Payments tab with the employee's name; "Paid" is their sum. Refunds need a reason.
 - **Edit booking** (`…` menu) can fix anything later; after check-out only guest details, notes and discount stay editable. **Undo** appears after a stage change.
 - **Two people at once:** saves are queued, so two staff cannot both book the same room at the same moment.
-- **Security:** employee passwords are stored scrambled; the Google Sheet link is shown only after the owner password is typed; sign-in attempts are rate-limited; the session cookie is HttpOnly (and Secure on https); every change carries an anti-forgery header; text typed into the app is stored as plain text, so `=HYPERLINK(...)` cannot run as a formula.
 - **Background files** are checked again on the server: real file type, size, and a video's length. On phones and with "reduce motion" a video shows a still frame.
 
 ## Sheet tabs
@@ -153,12 +192,14 @@ api/                     the server logic (no website code)
     bookings.ts · rooms.ts · staff.ts   the changes the app makes
     setup.ts · health.ts     "Set up sheet", connection check
     style.ts                 the Clay & Sand look of the sheet
-  auth/                    password scrambling, signed sign-in cookie, sign-in rate limit
+  auth/                    password.ts (scrambling), session.ts (signed cookie), throttle.ts (guessing limits), totp.ts (2-step code),
+                           revocation.ts (cancel sign-ins), audit.ts (security log)
   media/                   the owner's background file: checks, storing
   lib/                     .env reading, request and error helpers, form parsing
-server/                  the small web server: start.ts, network.ts (public/https), static.ts, media-serve.ts, adapt.ts, dotenv.ts
+server/                  the small web server: start.ts (opens the port), app.ts (what happens to each request), security.ts (headers, host and https checks, limits),
+                         network.ts (public/https), static.ts, media-serve.ts, adapt.ts, dotenv.ts
 shared/                  used by BOTH the website and the server
-  rules/                   validation, discounts, room clashes, stage changes (one file each)
+  rules/                   validation, discounts, room clashes, stage changes, password rules (one file each)
   types/                   data shapes (booking, rooms, guests, staff, session, background)
   constants.ts · dates.ts
 src/                     the website (React + TypeScript)
@@ -178,6 +219,8 @@ tests/                   api/, server/, shared/, scripts/, helpers/ (no internet
 |---|---|
 | Hotel name | `.env` → `HOTEL_NAME` |
 | A booking rule (discount, clash, what is required) | `shared/rules/` |
+| Password rules, sign-in limits, the 2-step code | `shared/rules/passwords.ts`, `api/auth/` |
+| Browser security headers, allowed website names | `server/security.ts` |
 | How something is written to the sheet | `api/sheets/` (`bookings.ts`, `rooms.ts`, `staff.ts`) |
 | Add or change an API action | `api/routes/` (+ `api/lib/input.ts` to check its input) |
 | The colours of the app | `src/styles/base/tokens.css` |
@@ -193,9 +236,9 @@ tests/                   api/, server/, shared/, scripts/, helpers/ (no internet
 | `npm run dev` / `npm run dev:demo` | Development server, real sheet / made-up data |
 | `npm run build` then `npm start` | Everyday use (`http://localhost:3000`) |
 | `npm run build:demo` | Static demo in `dist-demo/` |
-| `npm test` | 176 tests: rules, API, sign-in, setup, background checks, sheet styling, web serving |
+| `npm test` | 218 tests: rules, API, sign-in, security, setup, background checks, sheet styling, web serving |
 | `npm run typecheck` | TypeScript check of the whole project |
-| `npm run setup` | The `.env` wizard |
+| `npm run setup` | The `.env` wizard (`-- --check` tests it, `-- --2fa` adds the owner 2-step code) |
 | `npm run release -- --licensee "Hotel Name"` | A customer zip in `release/` |
 
 Updating from a new zip: unzip over the project keeping `.env`, `media/` and `node_modules`; run `npm install` if `package.json` changed and `npm run build` if you use `npm start`. Then, as owner, press **Set up sheet** once.
@@ -213,6 +256,9 @@ Updating from a new zip: unzip over the project keeping `.env`, `media/` and `no
 | A background video is refused | 15 seconds or less, under 20 MB, MP4 (H.264) or WebM. |
 | Works on the computer but not from a phone | Use the https address from "Use it from anywhere". Plain `http://<ip>:3000` works only on the same Wi-Fi and needs `HOST=0.0.0.0`. |
 | Many "too many wrong attempts" on the web | `TRUST_PROXY=1` is missing, so everyone looks like one visitor. |
+| "Enter the 6-digit code" | The owner 2-step code is on: type the code from your authenticator app. Phone lost: see [Security](#security). |
+| "Not started: OWNER_PASSWORD has only N characters" | A server that other devices can reach needs 12+ characters. Change it in `.env` or the host's settings. |
+| "This address is not allowed" (421) | The app is only for `localhost` on this computer, or `ALLOWED_HOSTS` does not list the name you typed. |
 | Port already in use | `PORT=3001 npm start` |
 | Changed `.env` but nothing changed | Stop (Ctrl+C) and start again. |
 

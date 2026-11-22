@@ -4,11 +4,12 @@
  *
  *   node scripts/setup.mjs            first-time setup (or "npm run setup")
  *   node scripts/setup.mjs --check    test an existing .env without changing it
+ *   node scripts/setup.mjs --2fa      switch on (or replace) the owner's 2-step code in an existing .env
  *
  * Needs only Node 20+. No packages. Runs in the folder it is started from.
  */
-import { createSign, randomBytes } from 'node:crypto';
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHmac, createSign, randomBytes } from 'node:crypto';
+import { chmodSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import readline from 'node:readline';
@@ -154,6 +155,114 @@ function validZone(tz) {
   }
 }
 
+/* ---------- passwords and the 2-step code (same rules as api/auth and shared/rules/passwords.ts) ---------- */
+
+const COMMON = new Set([
+  'password', 'passw0rd', 'p@ssword', 'p@ssw0rd', 'letmein', 'welcome', 'qwerty', 'qwertyuiop', 'qwerty123', 'asdfghjkl', 'zxcvbnm',
+  'iloveyou', 'admin', 'administrator', 'root', 'login', 'master', 'monkey', 'dragon', 'sunshine', 'princess', 'football', 'cricket',
+  'abc123', 'abcd1234', 'changeme', 'default', 'secret', 'hotel', 'hotelhotel', 'reception', 'frontdesk', 'manager', 'owner', 'staff',
+  'guest', 'india', 'mumbai', 'delhi', 'bollywood', 'krishna', 'ganesh', 'shivaji', 'jaishreeram', 'omnamahshivaya', 'trustno1',
+  'superman', 'batman', 'shadow', 'michael', 'jordan', 'harley', 'hunter', 'whatever', 'freedom', 'starwars', 'computer', 'internet',
+  'haveli', 'havelipassword', 'haveli123',
+]);
+const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm', '0123456789', 'abcdefghijklmnopqrstuvwxyz'];
+const keyboardRun = (p) => {
+  const s = p.toLowerCase();
+  return ROWS.some((row) => s.length >= 6 && (row.includes(s) || [...row].reverse().join('').includes(s)));
+};
+
+/** What is wrong with a password, or null when the app will accept it. */
+export function passwordProblem(password) {
+  if (password.length < 8 || password.length > 100) return 'Use 8 to 100 characters.';
+  const lower = password.toLowerCase();
+  const stem = lower.replace(/[0-9!@#$%^&*._-]+$/, '');
+  if (COMMON.has(lower) || COMMON.has(stem)) return 'That password is too easy to guess. Try a few unrelated words.';
+  if (new Set(lower).size <= 2) return 'That password is too repetitive. Try a few unrelated words.';
+  if (keyboardRun(password) || keyboardRun(stem)) return 'That password is a keyboard pattern. Try a few unrelated words.';
+  return null;
+}
+
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+export function base32(buf) {
+  let bits = 0;
+  let value = 0;
+  let out = '';
+  for (const byte of buf) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      out += B32[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  return bits > 0 ? out + B32[(value << (5 - bits)) & 31] : out;
+}
+
+function unbase32(text) {
+  let bits = 0;
+  let value = 0;
+  const out = [];
+  for (const ch of text.replace(/[\s-]/g, '').toUpperCase()) {
+    const i = B32.indexOf(ch);
+    if (i < 0) return null;
+    value = (value << 5) | i;
+    bits += 5;
+    if (bits >= 8) {
+      out.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(out);
+}
+
+/** The 6-digit code an authenticator app shows for this secret at this time (RFC 6238). */
+export function totpNow(secretText, nowMs = Date.now(), stepOffset = 0) {
+  const key = unbase32(secretText);
+  const msg = Buffer.alloc(8);
+  msg.writeBigUInt64BE(BigInt(Math.floor(nowMs / 30000) + stepOffset));
+  const h = createHmac('sha1', key).update(msg).digest();
+  const o = h[h.length - 1] & 15;
+  const n = ((h[o] & 0x7f) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3];
+  return String(n % 1000000).padStart(6, '0');
+}
+
+/** Walks the owner through adding the 2-step code to an authenticator app and proves it works. Returns the secret, or '' to skip. */
+async function askTwoStep(q, hotel, owner) {
+  say('');
+  say('Owner 2-step code (recommended, and important if Haveli is on the internet)');
+  say('Signing in as owner then also needs a 6-digit code from an app on your phone.');
+  say('Even if someone learns your password, they cannot get in without your phone.');
+  const yes = (await q.ask('Switch it on? (Y/n)', 'Y')).toLowerCase();
+  if (yes.startsWith('n')) return '';
+  const secret = base32(randomBytes(20));
+  const spaced = secret.match(/.{1,4}/g).join(' ');
+  say('');
+  say('On your phone open an authenticator app (Google Authenticator, Microsoft Authenticator,');
+  say('Authy, 1Password ...). Choose "Add account" and then "Enter a setup key", and type:');
+  say(`    Account name:  ${hotel} owner`);
+  say(`    Key:           ${spaced}`);
+  say('    Type:          time based');
+  say('');
+  for (let tries = 0; tries < 5; tries++) {
+    const typed = (await q.ask('Type the 6-digit code the app now shows (or press Enter to skip)', '')).replace(/\s/g, '');
+    if (!typed) {
+      say('  Skipped. You can switch it on later with: node setup.mjs --2fa');
+      return '';
+    }
+    const now = Date.now();
+    if ([-1, 0, 1].some((d) => totpNow(secret, now, d) === typed)) {
+      say('  ✓ The code works.');
+      say(`  Keep a note of the key (${spaced}) somewhere safe: it is how you add Haveli to a new phone.`);
+      say('  If you ever lose your phone, delete the OWNER_TOTP_SECRET line in .env and restart.');
+      return secret;
+    }
+    say('  That code is not right. Wait for a new code and try again.');
+  }
+  say('  Too many tries; the 2-step code was not switched on.');
+  return '';
+}
+
 function reportFindings(env) {
   const problems = [];
   if (!env.SHEET_ID) problems.push('SHEET_ID is empty');
@@ -166,7 +275,8 @@ function reportFindings(env) {
   }
   const pw = env.OWNER_PASSWORD || env.APP_PASSWORD || '';
   if (pw.length < 8) problems.push('OWNER_PASSWORD is missing or shorter than 8 characters');
-  if ((env.SESSION_SECRET ?? '').length < 24) problems.push('SESSION_SECRET is missing or shorter than 24 characters');
+  else if (passwordProblem(pw)) problems.push('OWNER_PASSWORD is too easy to guess');
+  if ((env.SESSION_SECRET ?? '').length < 32) problems.push('SESSION_SECRET is missing or shorter than 32 characters');
   if (env.HOTEL_TIMEZONE && !validZone(env.HOTEL_TIMEZONE)) problems.push('HOTEL_TIMEZONE is not a known time zone');
   return { problems, acct };
 }
@@ -192,6 +302,28 @@ async function runCheck() {
   say(`  ✓ Connected to "${r.title}". Tabs found: ${r.tabs.join(', ') || 'none'}.`);
   const missing = ['Rooms', 'Guests', 'Bookings', 'Payments', 'Staff'].filter((t) => !r.tabs.includes(t));
   if (missing.length) say(`  i  Missing tabs: ${missing.join(', ')}. After signing in as the owner, open Settings and press "Set up sheet".`);
+}
+
+/** Adds or replaces OWNER_TOTP_SECRET in an existing .env, leaving every other line as it is. */
+async function runTwoStep() {
+  if (!existsSync(ENV_FILE)) {
+    say('There is no .env file here yet. Run the setup first.');
+    process.exit(1);
+  }
+  const text = readFileSync(ENV_FILE, 'utf8');
+  const env = parseEnv(text);
+  const q = makeAsker();
+  const secret = await askTwoStep(q, env.HOTEL_NAME || 'Hotel', env.OWNER_USERNAME || 'owner');
+  q.close();
+  if (!secret) {
+    say('Nothing was changed.');
+    return;
+  }
+  copyFileSync(ENV_FILE, resolve(process.cwd(), '.env.backup'));
+  const line = `OWNER_TOTP_SECRET=${secret}`;
+  const next = /^OWNER_TOTP_SECRET=.*$/m.test(text) ? text.replace(/^OWNER_TOTP_SECRET=.*$/m, line) : `${text.replace(/\s*$/, '')}\n${line}\n`;
+  writeFileSync(ENV_FILE, next, { mode: 0o600 });
+  say('Saved. Stop Haveli and start it again; everyone is signed out once.');
 }
 
 async function runSetup() {
@@ -221,15 +353,19 @@ async function runSetup() {
 
   let password = '';
   for (;;) {
-    password = await q.secret('Owner password, at least 8 characters. Keep it to yourself');
-    if (password.length < 8) {
-      say('  That is too short. Use at least 8 characters.');
+    password = await q.secret('Owner password: 12 or more characters, a few unrelated words work well. Keep it to yourself');
+    const bad = passwordProblem(password);
+    if (bad) {
+      say('  ' + bad);
       continue;
     }
+    if (password.length < 12) say('  Note: on the internet the app needs 12 or more characters. It is fine for this computer only.');
     const again = await q.secret('Type it again to confirm');
     if (again === password) break;
     say('  The two did not match. Try again.');
   }
+
+  const totp = await askTwoStep(q, hotel, ownerUser);
 
   let sheet = '';
   while (!sheet) {
@@ -280,9 +416,15 @@ async function runSetup() {
     `GOOGLE_SERVICE_ACCOUNT_JSON='${compact}'`,
     `SESSION_SECRET=${randomBytes(32).toString('hex')}`,
     `HOTEL_TIMEZONE=${tz}`,
+    ...(totp ? [`OWNER_TOTP_SECRET=${totp}`] : []),
     '',
   ].join('\n');
   writeFileSync(ENV_FILE, env, { mode: 0o600 });
+  try {
+    chmodSync(ENV_FILE, 0o600); // an older .env keeps its old permissions otherwise
+  } catch {
+    /* Windows */
+  }
   say('');
   say('Saved the settings in .env');
   say('Testing the Google connection...');
@@ -306,5 +448,6 @@ async function runSetup() {
 // Run only when started directly, so the tests can import the helpers above.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--check')) await runCheck();
+  else if (process.argv.includes('--2fa')) await runTwoStep();
   else await runSetup();
 }

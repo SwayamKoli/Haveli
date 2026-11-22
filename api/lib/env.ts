@@ -2,6 +2,8 @@
  * Reads the server's settings from environment variables (the .env file in the
  * project folder). Secrets are never sent to the browser.
  */
+import { passwordProblem } from '../../shared/rules';
+import { validTotpSecret } from '../auth/totp';
 import { HttpError } from './http';
 
 export interface Config {
@@ -15,6 +17,8 @@ export interface Config {
   hotelName: string;
   sessionSecret: string;
   timeZone: string;
+  /** The owner's 2-step code secret (OWNER_TOTP_SECRET). Empty when the 2-step code is not switched on. */
+  ownerTotpSecret: string;
 }
 
 interface Account {
@@ -84,9 +88,11 @@ export function configProblems(): string[] {
   const pw = ownerPassword();
   if (!pw) problems.push('OWNER_PASSWORD');
   else if (pw.length < 8) problems.push('OWNER_PASSWORD (use at least 8 characters)');
+  else if (passwordProblem(pw)) problems.push('OWNER_PASSWORD (too easy to guess: use a few unrelated words)');
   const secret = env('SESSION_SECRET');
   if (!secret) problems.push('SESSION_SECRET');
-  else if (secret.length < 24) problems.push('SESSION_SECRET (use at least 24 characters)');
+  else if (secret.length < 32) problems.push('SESSION_SECRET (use at least 32 characters)');
+  if (env('OWNER_TOTP_SECRET') && !validTotpSecret(env('OWNER_TOTP_SECRET'))) problems.push('OWNER_TOTP_SECRET (not a valid key: run "npm run setup" to make a new one)');
   if (env('HOTEL_TIMEZONE') && !validZone(env('HOTEL_TIMEZONE'))) problems.push('HOTEL_TIMEZONE (unknown time zone)');
   return problems;
 }
@@ -108,6 +114,7 @@ export function getConfig(): Config {
     hotelName: hotelName(),
     sessionSecret: env('SESSION_SECRET'),
     timeZone: env('HOTEL_TIMEZONE') || 'Asia/Kolkata',
+    ownerTotpSecret: env('OWNER_TOTP_SECRET').replace(/[\s-]/g, '').toUpperCase(),
   };
 }
 

@@ -29,9 +29,9 @@ const TABS = ['Rooms', 'Guests', 'Bookings', 'Payments', 'Staff'];
 describe('Clay & Sand look for the Google Sheet', () => {
   it('is for the owner only', async () => {
     g.tabs.Staff.push(['asha', 'Asha', 'Reception', 'x', 'Yes', '']);
-    const r = await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha Verma', role: 'Reception', active: true, password: 'asha-pass-1' } });
+    const r = await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha Verma', role: 'Reception', active: true, password: 'maple-river-41' } });
     assert.equal(r.status, 200);
-    const asha = await signIn('asha', 'asha-pass-1');
+    const asha = await signIn('asha', 'maple-river-41');
     assert.equal((await call('sheet-setup', { cookie: asha, body: {} })).status, 403);
     assert.equal((await call('sheet-setup', { body: {} })).status, 401);
     assert.equal(g.batches, 0);
@@ -164,7 +164,7 @@ describe('Clay & Sand look for the Google Sheet', () => {
   });
 
   it('adds new rows without inserting rows, so a new row never copies the header look', async () => {
-    const r = await call('staff-save', { cookie: owner, body: { username: 'ravi', name: 'Ravi', role: 'Reception', active: true, password: 'ravi-pass-1' } });
+    const r = await call('staff-save', { cookie: owner, body: { username: 'ravi', name: 'Ravi', role: 'Reception', active: true, password: 'tulip-moon-63' } });
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.ok(g.appendModes.length > 0);
     assert.ok(g.appendModes.every((m) => m === 'OVERWRITE'), g.appendModes.join(','));

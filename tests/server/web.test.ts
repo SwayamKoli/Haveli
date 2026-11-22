@@ -9,12 +9,13 @@ import { gunzipSync } from 'node:zlib';
 import { forgetStaffCache } from '../../api/sheets';
 import {
   applyHostingDefaults,
-  commonHeaders,
   hostedOn,
   isPublic,
   listenHost,
+  publicProblems,
   publicWarnings,
 } from '../../server/network';
+import { securityHeaders } from '../../server/security';
 import { serveStatic } from '../../server/static';
 import { FakeGoogle } from '../helpers/fakeGoogle';
 import { call, OWNER, PASSWORD, setEnv } from '../helpers/harness';
@@ -88,7 +89,7 @@ describe('where the server listens', () => {
     Object.assign(process.env, keep);
   });
   const clean = () => {
-    for (const k of ['HOST', 'PORT', 'TRUST_PROXY', 'RENDER', 'RAILWAY_PROJECT_ID', 'RAILWAY_ENVIRONMENT', 'FLY_APP_NAME', 'K_SERVICE', 'DYNO', 'OWNER_PASSWORD', 'APP_PASSWORD']) delete process.env[k];
+    for (const k of ['HOST', 'PORT', 'TRUST_PROXY', 'RENDER', 'RAILWAY_PROJECT_ID', 'RAILWAY_ENVIRONMENT', 'FLY_APP_NAME', 'K_SERVICE', 'DYNO', 'OWNER_PASSWORD', 'APP_PASSWORD', 'OWNER_TOTP_SECRET']) delete process.env[k];
   };
 
   it('is this computer only by default', () => {
@@ -124,16 +125,24 @@ describe('where the server listens', () => {
     applyHostingDefaults();
     assert.equal(process.env.TRUST_PROXY, '2');
   });
-  it('warns about a short owner password and a missing TRUST_PROXY when open to the internet', () => {
+  it('refuses to start in public with a short owner password, and warns about a missing TRUST_PROXY and 2-step code', () => {
     clean();
+    delete process.env.OWNER_TOTP_SECRET;
     process.env.OWNER_PASSWORD = 'short-pw-1';
+    const p = publicProblems('0.0.0.0');
+    assert.equal(p.length, 1);
+    assert.match(p[0], /12 or more/);
+    assert.deepEqual(publicProblems('127.0.0.1'), [], 'fine on this computer only');
+    process.env.OWNER_PASSWORD = 'a long password for the web';
+    assert.deepEqual(publicProblems('0.0.0.0'), []);
     const w = publicWarnings('0.0.0.0');
     assert.equal(w.length, 2);
-    assert.match(w[0], /12 or more/);
-    assert.match(w[1], /TRUST_PROXY/);
-    process.env.OWNER_PASSWORD = 'a long password for the web';
+    assert.match(w[0], /TRUST_PROXY/);
+    assert.match(w[1], /2-step/);
     process.env.TRUST_PROXY = '1';
+    process.env.OWNER_TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
     assert.deepEqual(publicWarnings('0.0.0.0'), []);
+    delete process.env.OWNER_TOTP_SECRET;
   });
 });
 
@@ -151,7 +160,7 @@ describe('serving the website', () => {
     writeFileSync(join(dir, 'small.txt'), 'tiny');
     setEnv(g, { TRUST_PROXY: '1' });
     server = createServer((req, res) => {
-      commonHeaders(req, res);
+      securityHeaders(req, res);
       serveStatic(req, res, dir);
     });
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));

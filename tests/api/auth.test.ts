@@ -82,7 +82,8 @@ describe('sign-in', () => {
   it('signed tokens carry who is signed in, expire, and cannot be tampered with', () => {
     const who: SessionUser = { u: 'asha', n: 'Asha Verma', r: 'Reception', o: false, v: false, k: 'abcdef' };
     const t = createToken(SECRET, who, 1_000_000);
-    assert.deepEqual(verifyToken(SECRET, t, 2_000_000), who);
+    assert.deepEqual({ ...verifyToken(SECRET, t, 2_000_000) }, { ...who, i: 1_000_000, j: verifyToken(SECRET, t, 2_000_000)?.j, e: 1_000 + 12 * 3600 });
+    assert.ok((verifyToken(SECRET, t, 2_000_000)?.j ?? '').length >= 12, 'every sign-in has its own id');
     assert.equal(verifyToken(SECRET, t, 1_000_000 + 13 * 3600 * 1000), null, 'a shift is 12 hours');
     assert.equal(verifyToken('another-secret-another-secret!!', t, 2_000_000), null);
     const [v, body, sig] = t.split('.');
@@ -101,9 +102,9 @@ describe('staff accounts and the owner password', () => {
     assert.equal(row[0], 'asha');
     assert.equal(row[1], 'Asha Verma');
     assert.equal(row[2], 'Reception');
-    assert.match(String(row[3]), /^scrypt\$16384\$8\$1\$/);
+    assert.match(String(row[3]), /^scrypt\$32768\$8\$1\$/);
     assert.equal(row[4], 'Yes');
-    assert.equal(JSON.stringify(g.tabs).includes('asha-pass-1'), false, 'the password itself is nowhere in the sheet');
+    assert.equal(JSON.stringify(g.tabs).includes('maple-river-41'), false, 'the password itself is nowhere in the sheet');
     const list = await call('staff-list', { cookie: owner });
     assert.deepEqual(list.body.staff.map((s: any) => [s.username, s.name, s.role, s.active]), [['asha', 'Asha Verma', 'Reception', true]]);
     assert.equal(JSON.stringify(list.body).includes('scrypt'), false, 'hashes never leave the server');
@@ -111,11 +112,11 @@ describe('staff accounts and the owner password', () => {
 
   it('signs an employee in with their own username and password', async () => {
     await makeStaff();
-    const r = await call('login', { body: { username: 'ASHA', password: 'asha-pass-1' } });
+    const r = await call('login', { body: { username: 'ASHA', password: 'maple-river-41' } });
     assert.equal(r.status, 200);
     assert.deepEqual(r.body.staff, { username: 'asha', name: 'Asha Verma', role: 'Reception', owner: false, viaOwner: false });
     assert.equal((await call('login', { body: { username: 'asha', password: 'wrong-pass' } })).status, 401);
-    assert.equal((await call('login', { body: { username: OWNER, password: 'asha-pass-1' } })).status, 401, 'an employee password never opens the owner account');
+    assert.equal((await call('login', { body: { username: OWNER, password: 'maple-river-41' } })).status, 401, 'an employee password never opens the owner account');
   });
 
   it('lets the owner password open any employee account, and records "(via owner)"', async () => {
@@ -136,7 +137,7 @@ describe('staff accounts and the owner password', () => {
     for (const cookie of [own, via]) {
       for (const [action, body] of [
         ['staff-list', undefined],
-        ['staff-save', { username: 'bob', name: 'Bob Roy', role: 'Reception', password: 'bobs-pass-1' }],
+        ['staff-save', { username: 'bob', name: 'Bob Roy', role: 'Reception', password: 'cedar-lake-52' }],
         ['health', undefined],
         ['sheet-setup', {}],
         ['rooms-generate', { floors: 1, perFloor: 2, rate: 2000 }],
@@ -154,7 +155,7 @@ describe('staff accounts and the owner password', () => {
     await makeStaff();
     await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha Verma', role: 'Reception', active: false, password: '' } });
     assert.equal((await call('login', { body: { username: 'asha', password: PASSWORD } })).status, 401);
-    assert.equal((await call('login', { body: { username: 'asha', password: 'asha-pass-1' } })).status, 401);
+    assert.equal((await call('login', { body: { username: 'asha', password: 'maple-river-41' } })).status, 401);
   });
 
   it('signs an employee out the moment the owner switches them off', async () => {
@@ -173,7 +174,7 @@ describe('staff accounts and the owner password', () => {
     await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha V.', role: 'Manager', active: true, password: 'new-pass-22' } });
     assert.equal((await call('data', { cookie: own })).status, 401);
     assert.equal((await call('data', { cookie: via })).status, 200, 'the owner is still in, acting as them');
-    assert.equal((await call('login', { body: { username: 'asha', password: 'asha-pass-1' } })).status, 401);
+    assert.equal((await call('login', { body: { username: 'asha', password: 'maple-river-41' } })).status, 401);
     const ok = await call('login', { body: { username: 'asha', password: 'new-pass-22' } });
     assert.equal(ok.status, 200);
     assert.deepEqual([ok.body.staff.name, ok.body.staff.role], ['Asha V.', 'Manager']);
@@ -218,10 +219,10 @@ describe('staff accounts and the owner password', () => {
 
   it('asks for the one-time setup when the Staff tab does not exist yet', async () => {
     delete g.tabs.Staff;
-    const r = await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha Verma', role: 'Reception', password: 'asha-pass-1' } });
+    const r = await call('staff-save', { cookie: owner, body: { username: 'asha', name: 'Asha Verma', role: 'Reception', password: 'maple-river-41' } });
     assert.equal(r.status, 409);
     assert.equal(r.body.code, 'SETUP');
-    assert.equal((await call('login', { body: { username: 'asha', password: 'asha-pass-1' } })).status, 401);
+    assert.equal((await call('login', { body: { username: 'asha', password: 'maple-river-41' } })).status, 401);
     assert.equal((await call('login', { body: { username: OWNER, password: PASSWORD } })).status, 200, 'the owner can always get in');
   });
 });
@@ -242,7 +243,7 @@ describe('the link to the Google Sheet', () => {
 
   it('works for an employee only when they type the owner password', async () => {
     const own = await makeStaff();
-    assert.equal((await call('sheet-link', { cookie: own, body: { password: 'asha-pass-1' } })).status, 401);
+    assert.equal((await call('sheet-link', { cookie: own, body: { password: 'maple-river-41' } })).status, 401);
     assert.equal((await call('sheet-link', { cookie: own, body: { password: PASSWORD } })).status, 200);
   });
 

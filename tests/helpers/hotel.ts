@@ -39,7 +39,7 @@ export function raw(tab: string, vals: Record<string, string | number>): void {
   g.addRawRow(tab, (g.tabs[tab][0] as string[]).map((h) => vals[h] ?? ''));
 }
 
-export async function makeStaff(username = 'asha', password = 'asha-pass-1', name = 'Asha Verma', role = 'Reception') {
+export async function makeStaff(username = 'asha', password = 'maple-river-41', name = 'Asha Verma', role = 'Reception') {
   const r = await call('staff-save', { cookie: owner, body: { username, name, role, active: true, password } });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   return signIn(username, password);

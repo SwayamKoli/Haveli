@@ -1,7 +1,14 @@
 /**
  * Calls the API handler directly, the way the server does, with a signed-in cookie when needed.
  */
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import handler from '../../api/handler';
+import { resetAudit } from '../../api/auth/audit';
+import { resetRevocations } from '../../api/auth/revocation';
+import { resetThrottles } from '../../api/auth/throttle';
+import { resetCodeReplay } from '../../api/auth/totp';
 import type { ApiRequest, ApiResponse } from '../../api/lib/http';
 import { resetTokenCache } from '../../api/sheets/google';
 import { FakeGoogle, SHEET_ID } from './fakeGoogle';
@@ -31,6 +38,11 @@ export function setEnv(g: FakeGoogle, overrides: Record<string, string | undefin
     HOTEL_TIMEZONE: 'Asia/Kolkata',
     // Tests talk to the app the way a hosting service does: one proxy in front, adding the visitor's address.
     TRUST_PROXY: '1',
+    OWNER_TOTP_SECRET: undefined,
+    ALLOWED_HOSTS: undefined,
+    // Every test gets its own empty media folder (it also holds the "signed out" list), and the security log stays quiet.
+    MEDIA_DIR: process.env.MEDIA_DIR && !process.env.MEDIA_DIR.includes('haveli-test-media-') ? process.env.MEDIA_DIR : mkdtempSync(join(tmpdir(), 'haveli-test-media-')),
+    HAVELI_QUIET: '1',
     ...overrides,
   };
   for (const [k, v] of Object.entries(env)) {
@@ -38,6 +50,10 @@ export function setEnv(g: FakeGoogle, overrides: Record<string, string | undefin
     else process.env[k] = v;
   }
   resetTokenCache();
+  resetThrottles();
+  resetAudit();
+  resetRevocations();
+  resetCodeReplay();
 }
 
 export interface CallOptions {

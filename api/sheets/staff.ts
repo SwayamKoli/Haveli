@@ -2,6 +2,7 @@
  * Employees in the Staff tab: checking a sign-in, listing, adding and editing. Passwords are stored scrambled.
  */
 import { STAFF_ROLES } from '../../shared/constants';
+import { passwordProblem } from '../../shared/rules';
 import { stampInZone } from '../../shared/dates';
 import type { StaffMember, StaffSaveInput } from '../../shared/types';
 import { dummyHash, fingerprint, hashPassword, verifyPassword } from '../auth/password';
@@ -98,7 +99,8 @@ async function saveStaffNow(input: StaffSaveInput, by: string): Promise<StaffMem
   if (!STAFF_ROLES.includes(input.role)) e.role = 'Choose a role.';
   const pw = input.password ?? '';
   if (!existing && !pw) e.password = 'Set a password for this employee.';
-  if (pw && (pw.length < 6 || pw.length > 72)) e.password = 'Use 6 to 72 characters.';
+  if (pw) e.password = passwordProblem(pw, username, name) ?? '';
+  if (!e.password) delete e.password;
   if (Object.keys(e).length) throw new HttpError(422, 'Please fix the highlighted fields.', e);
 
   const ss = sheets.staff;

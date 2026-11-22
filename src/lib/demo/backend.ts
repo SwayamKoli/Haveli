@@ -8,6 +8,7 @@ import {
   money,
   nextId,
   normalizeMobile,
+  passwordProblem,
   parseEtaMinutes,
   planPayment,
   planRoomMove,
@@ -17,7 +18,7 @@ import {
   validateBooking,
   validateNewRoom,
 } from '../../../shared/rules';
-import type { BackgroundInfo, Booking, DataBundle, Payment, Room, RoomManual } from '../../../shared/types';
+import type { BackgroundInfo, Booking, DataBundle, Payment, Room, RoomManual, SecurityReport } from '../../../shared/types';
 import { HOTEL_NAME } from '../../config';
 import { ApiError, type Backend } from '../api';
 import { roomTypes } from '../selectors';
@@ -259,7 +260,7 @@ export function makeDemoBackend(): Backend {
       if (input.name.trim().length < 2) e.name = 'Enter the employee name.';
       if (!STAFF_ROLES.includes(input.role)) e.role = 'Choose a role.';
       if (!existing && !input.password) e.password = 'Set a password for this employee.';
-      else if (input.password && input.password.length < 6) e.password = 'Use 6 to 72 characters.';
+      else if (input.password && passwordProblem(input.password, username, input.name)) e.password = passwordProblem(input.password, username, input.name) ?? '';
       if (Object.keys(e).length) throw new ApiError(422, 'Please fix the highlighted fields.', e);
       if (existing) Object.assign(existing, { name: input.name.trim(), role: input.role, active: input.active });
       else db.staff.push({ username, name: input.name.trim(), role: input.role, active: input.active, createdAt: today });
@@ -267,6 +268,25 @@ export function makeDemoBackend(): Backend {
     },
 
     setupSheet: async () => ({ changes: [] }),
+
+    security: async (): Promise<SecurityReport> => {
+      const t = Date.now();
+      const ago = (min: number) => new Date(t - min * 60_000).toISOString();
+      return {
+        checks: [
+          { id: 'two-step', ok: false, title: 'Owner 2-step code', detail: 'Off in this demo. In the real app, switch it on with "npm run setup".' },
+          { id: 'https', ok: true, title: 'Private connection', detail: 'The demo runs inside your browser; nothing is sent anywhere.' },
+          { id: 'owner-password', ok: true, title: 'Owner password length', detail: 'Not used in the demo.' },
+        ],
+        events: [
+          { at: ago(4), type: 'login', who: 'owner', ip: '203.0.113.7', detail: 'owner' },
+          { at: ago(35), type: 'login-failed', who: 'owner', ip: '198.51.100.23', detail: '' },
+          { at: ago(36), type: 'login-failed', who: 'admin', ip: '198.51.100.23', detail: '' },
+          { at: ago(190), type: 'login', who: 'asha', ip: '203.0.113.7', detail: '' },
+        ],
+      };
+    },
+    signOutAll: async () => undefined,
 
     setBackground: async (kind) => ({ background: setBg(kind, null) }),
     uploadBackground: async (kind, file) => ({ background: setBg(kind, URL.createObjectURL(file)) }),

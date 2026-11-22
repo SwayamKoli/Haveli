@@ -3,8 +3,10 @@
  */
 import type { StaffInfo } from '../../shared/types';
 import { ownerFingerprint, type SessionUser } from '../auth/session';
+import type { SecurityEventType } from '../../shared/types';
+import { record } from '../auth/audit';
 import { getConfig } from '../lib/env';
-import type { ApiRequest, ApiResponse } from '../lib/http';
+import { clientIp, type ApiRequest, type ApiResponse } from '../lib/http';
 import * as repo from '../sheets';
 
 export interface Ctx {
@@ -22,6 +24,9 @@ export interface Route {
   run: (ctx: Ctx) => Promise<unknown> | unknown;
 }
 
+/** Writes a line in the security log for what the signed-in person just did. */
+export const audit = (ctx: Ctx, type: SecurityEventType, detail = ''): void => record(type, ctx.who.u, clientIp(ctx.req), detail);
+
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export const staffInfo = (u: SessionUser): StaffInfo => ({ username: u.u, name: u.n, role: u.r, owner: u.o, viaOwner: u.v });
@@ -33,7 +38,7 @@ export async function stillAllowed(who: SessionUser): Promise<boolean> {
   if (who.o || who.v) {
     // Signed in with the owner password: changing that password signs these sessions out.
     const cfg = getConfig();
-    if (who.k !== ownerFingerprint(cfg.sessionSecret, cfg.ownerPassword)) return false;
+    if (who.k !== ownerFingerprint(cfg.sessionSecret, cfg.ownerPassword, cfg.ownerTotpSecret)) return false;
   }
   if (who.o) return true;
   return repo.employeeStillValid(who.u, who.k, who.v);

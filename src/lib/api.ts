@@ -15,6 +15,7 @@ import type {
   Room,
   RoomManual,
   RoomsGenerateInput,
+  SecurityReport,
   SessionInfo,
   StaffMember,
   StaffSaveInput,
@@ -25,7 +26,8 @@ import type {
 export interface Backend {
   mode: 'live' | 'demo';
   session(): Promise<SessionInfo>;
-  login(username: string, password: string): Promise<SessionInfo>;
+  /** `code` is the owner's 6-digit 2-step code, needed only when the server asks for it (ApiError.code === 'CODE_REQUIRED'). */
+  login(username: string, password: string, code?: string): Promise<SessionInfo>;
   logout(): Promise<void>;
   load(): Promise<DataBundle>;
   createBooking(input: NewBookingInput): Promise<{ booking: Booking; guest: Guest; guestCreated: boolean; payment: Payment | null }>;
@@ -47,6 +49,10 @@ export interface Backend {
   setBackground(kind: 'none' | 'scene'): Promise<{ background: BackgroundInfo }>;
   /** A photo or a short video, shown to everyone. Replaces whatever was there before. */
   uploadBackground(kind: 'image' | 'video', file: File): Promise<{ background: BackgroundInfo }>;
+  /** The security checklist and recent sign-in log. */
+  security(): Promise<SecurityReport>;
+  /** Cancels every sign-in on every device, this one included. */
+  signOutAll(): Promise<void>;
   /** Asks for the owner password every time. The link is never sent to the browser otherwise. */
   sheetLink(password: string): Promise<{ url: string }>;
 }
@@ -54,11 +60,14 @@ export interface Backend {
 export class ApiError extends Error {
   status: number;
   fields?: FieldErrors;
-  constructor(status: number, message: string, fields?: FieldErrors) {
+  /** A short reason the server gives for a few cases, such as CODE_REQUIRED. */
+  code?: string;
+  constructor(status: number, message: string, fields?: FieldErrors, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.fields = fields;
+    this.code = code;
   }
 }
 
@@ -75,14 +84,14 @@ async function call<T>(action: string, opts: { method?: 'GET' | 'POST'; body?: u
   } catch {
     throw new ApiError(0, 'Cannot reach the server. Check that it is running and try again.');
   }
-  type Body = { error?: string; fields?: FieldErrors } | null;
+  type Body = { error?: string; fields?: FieldErrors; code?: string } | null;
   const data: Body = await res.json().then(
     (j: unknown) => j as Body,
     () => null, // not JSON
   );
   if (!res.ok) {
     if (res.status === 401 && !opts.quiet401) window.dispatchEvent(new Event('haveli:unauthorized'));
-    throw new ApiError(res.status, data?.error ?? `The server answered with an error (${res.status}).`, data?.fields);
+    throw new ApiError(res.status, data?.error ?? `The server answered with an error (${res.status}).`, data?.fields, data?.code);
   }
   return data as T;
 }
@@ -92,7 +101,7 @@ export function makeLiveBackend(): Backend {
   return {
     mode: 'live',
     session: () => call<SessionInfo>('session'),
-    login: (username, password) => call<SessionInfo>('login', { method: 'POST', body: { username, password }, quiet401: true }),
+    login: (username, password, code) => call<SessionInfo>('login', { method: 'POST', body: { username, password, code }, quiet401: true }),
     logout: async () => {
       await post('logout');
     },
@@ -110,6 +119,10 @@ export function makeLiveBackend(): Backend {
     setupSheet: () => post('sheet-setup'),
     setBackground: (kind) => post('background-set', { kind }),
     uploadBackground: (kind, file) => call(`background-upload?kind=${kind}`, { method: 'POST', file }),
+    security: () => call<SecurityReport>('security'),
+    signOutAll: async () => {
+      await post('sign-out-all');
+    },
     sheetLink: (password) => call('sheet-link', { method: 'POST', body: { password }, quiet401: true }),
   };
 }

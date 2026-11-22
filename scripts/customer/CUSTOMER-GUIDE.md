@@ -68,7 +68,8 @@ The first time, it asks a few questions (hotel name, your owner password, the sh
 - To **change an employee's password** or **switch them off**: Settings → Employees → *Edit*.
 - There is no "forgot password" for employees. They ask the owner.
 - The **Open the Google Sheet** button asks for the owner password every time. **Do not share the Google Sheet with employees**; they do their work inside Haveli.
-- To change the owner password, open the `.env` file in this folder in Notepad, change the `OWNER_PASSWORD=` line, save, and restart Haveli.
+- To change the owner password, open the `.env` file in this folder in Notepad, change the `OWNER_PASSWORD=` line, save, and restart Haveli. Use a few unrelated words (12 or more characters).
+- Employee passwords need 8 or more characters, must not be a common password, and must not contain the username or name.
 
 ## Using it from other devices and from anywhere
 
@@ -98,6 +99,14 @@ Whichever way, add `TRUST_PROXY=1` to `.env` when something sits in front of Hav
 - Keep `.env` and the key file private. If the key file ever leaks, delete the key in Google Cloud and make a new one.
 - Staff are signed out automatically after 12 hours.
 
+## Keeping it safe from hackers
+
+- **Switch on the owner 2-step code.** To add it, open a terminal in this folder and run `node setup.mjs --2fa`. It shows a key to add in an authenticator app on your phone (Google Authenticator, Microsoft Authenticator, Authy). Then signing in as owner also needs the 6-digit code. Keep a note of the key. If you lose your phone, delete the `OWNER_TOTP_SECRET=` line in `.env`, restart, and run the command again.
+- **Settings → Security** (owner) shows how well protected Haveli is and who signed in recently, including wrong passwords and the address they came from. If you see many wrong attempts from addresses you do not know, someone is guessing: use a longer owner password and switch on the 2-step code.
+- **Sign out everyone** (Settings → Security) ends every sign-in on every device. Use it if a phone or laptop is lost, or an employee leaves.
+- Use Haveli on the internet **only through an https address**, never plain http.
+- Do not share the Google Sheet or the key file, and never send `.env` to anyone.
+
 ## If something goes wrong
 
 | What you see | What to do |
@@ -106,6 +115,9 @@ Whichever way, add `TRUST_PROXY=1` to `.env` when something sits in front of Hav
 | "Could not reach Google" or bookings do not save | Check the internet. Then run `node setup.mjs --check` in this folder: it tells you in words what is wrong. |
 | The sheet is "not found" or "no access" | Share the sheet with the robot email again, as **Editor** (step 1, point 7). |
 | An employee cannot sign in | Settings → Employees → *Edit*: make sure *Can sign in* is ticked, or set a new password. |
+| "Enter the 6-digit code" | The owner 2-step code is on. Type the code from your authenticator app. Lost phone: see "Keeping it safe from hackers". |
+| "Too many wrong attempts" | Wait 10 minutes. This protects against guessing. |
+| "Not started: OWNER_PASSWORD has only N characters" | Haveli is open to other devices, so the owner password must have 12 or more characters. Change it in `.env`. |
 | A page looks stale | Press **Refresh** on the dashboard. Haveli also refreshes by itself every 45 seconds. |
 
 ## Updating

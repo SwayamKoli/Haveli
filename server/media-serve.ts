@@ -6,6 +6,7 @@ import { createReadStream, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname, join } from 'node:path';
 import { MEDIA_TYPES, mediaDir, servedName } from '../api/media/media';
+import { MEDIA_CSP } from './security';
 
 /** Returns true when the request was a /media/ request (answered here). */
 export function serveMedia(req: IncomingMessage, res: ServerResponse): boolean {
@@ -31,6 +32,7 @@ export function serveMedia(req: IncomingMessage, res: ServerResponse): boolean {
   res.setHeader('Content-Type', type);
   res.setHeader('Accept-Ranges', 'bytes');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', MEDIA_CSP);
   // Every upload gets a new file name, so a file never changes: browsers may keep it.
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
