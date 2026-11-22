@@ -1,0 +1,15 @@
+/* Clay & Sand: tables, the booking board and the rooms grid. */
+.tw{border-radius:14px;background:var(--glass)}
+th{background:none;font-weight:500;border-bottom:1px solid var(--line)}
+tbody tr:hover{background:rgb(var(--t) / .035)}
+tr.clickable{cursor:pointer}
+tr.clickable:focus-visible{outline-offset:-2px}
+.kcol{border-radius:16px;background:rgb(var(--t) / .035)}
+.kcol.over{background:rgb(var(--ac) / .1);border-color:var(--accent)}
+.kcard{background:var(--glass-2);border-radius:13px;box-shadow:inset 0 1px 0 var(--hi)}
+.kcard:hover{transform:none;border-color:var(--line-2)}
+.kcard h4{font-weight:550}
+.room{background:var(--glass);border-radius:14px;box-shadow:inset 0 1px 0 var(--hi)}
+.room:hover{transform:none;border-color:rgb(var(--ac) / .5)}
+.room .rn{font-weight:500}
+.more:hover{background:rgb(var(--t) / .1)}

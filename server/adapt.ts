@@ -4,7 +4,7 @@
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import handler from '../api/handler';
-import type { ApiRequest, ApiResponse } from '../api/_lib/http';
+import type { ApiRequest, ApiResponse } from '../api/lib/http';
 import { BACKGROUND_LIMITS } from '../shared/types';
 
 const MAX_BODY = 100_000;
@@ -80,7 +80,7 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, actio
     }
   }
 
-  const apiReq: ApiRequest = { method: req.method, headers: req.headers, query, body, raw };
+  const apiReq: ApiRequest = { method: req.method, headers: req.headers, query, body, raw, ip: req.socket.remoteAddress };
   const apiRes: ApiResponse = {
     setHeader(name, value) {
       res.setHeader(name, value as string | string[]);

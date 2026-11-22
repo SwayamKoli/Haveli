@@ -1,0 +1,18 @@
+/* Clay & Sand: look of the page area. */
+.main{background:var(--glass);border-radius:20px;box-shadow:inset 0 1px 0 var(--hi),var(--shadow);padding:28px 30px}
+.ph h1{font-family:var(--serif);font-size:36px;font-weight:400;letter-spacing:-.005em}
+.ph p{color:var(--muted)}
+.btn{height:40px;border-radius:11px;padding:0 17px;font-weight:550;border:1px solid transparent}
+.btn.primary{background:var(--accent);color:var(--ink);border-color:transparent;box-shadow:inset 0 1px 0 rgb(255 255 255 / .26),0 8px 18px -10px rgb(var(--ac) / .85)}
+.btn.primary:hover{transform:none;background:var(--accent-hi);box-shadow:inset 0 1px 0 rgb(255 255 255 / .3),0 10px 20px -10px rgb(var(--ac) / .95)}
+.btn.primary:active{background:var(--accent-deep)}
+.btn.ghost{border:1px solid var(--line-2);background:var(--glass)}
+.btn.ghost:hover{background:var(--glass-2)}
+.btn.soft{background:var(--glass-2);border-color:var(--line)}
+.btn.soft:hover{background:rgb(var(--t) / .14)}
+.btn.sm{height:32px;border-radius:9px;padding:0 13px}
+.btn[disabled]{opacity:.5;cursor:default;transform:none}
+a.btn{text-decoration:none}
+.btn.danger{color:var(--bad);border-color:rgb(var(--bad-rgb) / .4);background:rgb(var(--bad-rgb) / .08)}
+.btn.danger:hover{background:rgb(var(--bad-rgb) / .16)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

@@ -1,3 +1,6 @@
+/**
+ * Which page is open. The page name lives in the address after # so the back button works.
+ */
 import { useCallback, useEffect, useState } from 'react';
 
 export const PAGES = ['dashboard', 'bookings', 'rooms', 'guests', 'analytics', 'settings'] as const;

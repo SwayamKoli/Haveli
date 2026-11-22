@@ -1,6 +1,6 @@
 /**
  * The drawn hotel scene: a haveli skyline with chhatris and lit arched windows, at dusk (dark theme)
- * or in the afternoon (light theme). Built once as SVG text; the movement is plain CSS (theme.css).
+ * or in the afternoon (light theme). Built once as SVG text; the movement is plain CSS (styles/theme/backdrop.css).
  * The numbers come from a fixed seed, so it always looks the same.
  */
 function rng(seed: number): () => number {

@@ -1,0 +1,21 @@
+/* Clay & Sand: look of the menu, logo and theme switch. */
+.side{background:var(--glass);border-radius:20px;box-shadow:inset 0 1px 0 var(--hi),var(--shadow);padding:20px 12px 14px}
+.brand{padding:0 6px 14px}
+.logo{gap:10px}
+.logo i{width:36px;height:36px;border-radius:11px;background:rgb(var(--ac) / .16);border:1px solid rgb(var(--ac) / .38);color:var(--accent-text);font-size:18px}
+.brand{min-width:0}
+.logo{min-width:0}
+.logo i{flex:none}
+.logo .lbl{font-family:var(--serif);font-size:27px;font-weight:400;letter-spacing:.005em;line-height:1.08;min-width:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.logo .lbl[data-size=m]{font-size:22px}
+.logo .lbl[data-size=s]{font-size:18px}
+.logo .lbl[data-size=xs]{font-size:15px}
+.logo .lbl::after{content:".";color:var(--accent)}
+.sq{border-radius:10px;border-color:var(--line)}
+.grp{letter-spacing:.1em;font-size:10.5px}
+.nav{border-radius:11px;padding:10px 12px;font-weight:450}
+.nav:hover{background:rgb(var(--t) / .05)}
+.nav.on{background:var(--glass-2);box-shadow:inset 0 0 0 1px var(--line)}
+.nav.on::before{display:none}
+.nav.on .ic{color:var(--accent-text)}
+.sidefoot{margin:8px 4px 0;padding:11px 12px;border-radius:12px;background:var(--glass);border:1px solid var(--line);color:var(--muted)}

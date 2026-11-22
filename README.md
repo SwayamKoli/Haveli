@@ -1,164 +1,229 @@
 # Haveli: hotel management
 
-Bookings, rooms, guests, payments and a daily dashboard for a hotel. Your data lives in a **Google Sheet that you own**; this app reads and writes it.
-A calm **Clay & Sand** design (dark by default, light on request), works on a laptop, tablet and phone.
+Bookings, rooms, guests, payments and a daily dashboard for a hotel. The data lives in a **Google Sheet the hotel owns**; the app reads and writes it. Works on a laptop, tablet and phone, in a dark (default) or light **Clay & Sand** look.
 
-> **Try it first, no setup:** `npm install` then `npm run dev:demo`. This runs on made-up data (50 rooms on 5 floors) and saves nothing.
+**Try it first, no setup:** `npm install`, then `npm run dev:demo`. Made-up data, nothing is saved.
 
-**Version 0.3.0 at a glance**
+Contents: [Features](#features) · [Set up](#set-up) · [Use it from anywhere](#use-it-from-anywhere-phone-tablet-any-browser) · [Daily use](#daily-use) · [Sheet tabs](#sheet-tabs) · [Project structure](#project-structure) · [Commands](#commands) · [Troubleshooting](#troubleshooting) · [Selling it](#selling-it-to-hotels-and-franchises)
 
-- New **Clay & Sand** look: warm dark (default) and light themes, serif headings, one terracotta accent. A **sun/moon button beside the bell** (and in Settings) switches theme. Each person's last choice is remembered on sign-in.
-- The **owner** can set the website **background** in Settings → **Website background**: *Plain*, the drawn *Hotel scene*, a *Photo* (JPG/PNG/WebP, up to 5 MB) or a *Video* (MP4/WebM, **15 seconds or less**, up to 20 MB, loops without a gap). Only one at a time; it shows for every user; only the owner can change it.
-- The **Google Sheet gets the same look** in every tab (header, banded rows, colours for stages and room status, dropdowns, ₹ formats, frozen header). Settings → **Apply Clay & Sand style**; *Set up sheet* does it too. It never changes any value.
+## Features
 
-Earlier, in 0.2.0:
+- **Bookings** on a board (Reserved → Checked in → Checked out, or Cancelled), several rooms per booking, discount in ₹ or %, edit after saving, double booking blocked.
+- **Payments and refunds** in a ledger; the dashboard shows money actually received.
+- **Every person has their own login.** The owner adds employees; the owner password opens any employee's account (recorded as "Name (via owner)"). Every booking and payment records who took it.
+- **The hotel's own name** is the logo on the sidebar, sign-in screen, welcome animation and browser tab. It is set in `.env` (`HOTEL_NAME`), so each hotel that buys the app sees its own name.
+- **Dark / light** switch beside the bell; each person's choice is remembered.
+- **Website background** (owner only, same for everyone): plain, a drawn hotel scene, a photo (up to 5 MB) or a looping video (15 seconds or less, up to 20 MB).
+- **The Google Sheet is styled too** (header, banded rows, colours for stages and room status, dropdowns, ₹ formats). It is applied by **Settings → Set up sheet**, which never changes a value.
+- Runs on your own computer or on the web, so the owner can open it from any device.
 
-- Every person signs in with their **own username and password**. The owner adds employees in **Settings → Employees**.
-- The **owner password opens any employee's account** (no need to remember theirs). Work done that way is recorded as "Name (via owner)".
-- Every booking and payment records **who took it**. There is no forgot-password for employees; they ask the owner.
-- One booking can hold **several rooms**, with a **discount** (₹ or %) and an automatic "amount to pay".
-- Saved bookings can be **edited**. Payments and refunds go to a ledger, and **money received** is what the dashboard shows.
-- **Settings** is a full page (also opened by the user button at the top right). The Google Sheet link needs the **owner password**.
-- Logout asks for confirmation; the bell opens a small notification window under it; intro animation on start.
-- Selling it: `npm run setup` (wizard) and `npm run release` (customer folder). See "Selling Haveli" below.
+## Set up
 
----
+You need **Node.js 20 or newer** (https://nodejs.org, "LTS"), a terminal, and a Google account that owns the sheet.
 
-## 1. What you need
+### 1. Google Sheet and key (once, about 10 minutes)
 
-- **Node.js 20 or newer** (https://nodejs.org, the "LTS" button).
-- **VS Code** (or any editor) and a terminal.
-- A Google account that owns the Google Sheet.
+The app signs in to Google as a small robot account (a service account) that you share your sheet with.
 
-## 2. Set up the Google Sheet (one time, about 10 minutes)
+1. Create a blank Google Sheet and leave it empty.
+2. At https://console.cloud.google.com create a project, then **APIs & Services → Library → Google Sheets API → Enable**.
+3. **IAM & Admin → Service accounts → Create service account** (name it e.g. "haveli") → **Done**.
+4. Open it → **Keys → Add key → Create new key → JSON**. A `.json` file downloads. **It is a password: keep it private.**
+5. Copy `client_email` from that file, press **Share** on your sheet, paste it, choose **Editor**.
 
-The app signs in to Google as a small robot account (a "service account"). You give that robot access to your sheet, and only your sheet.
+### 2. Fill in `.env`
 
-1. Open https://console.cloud.google.com and create a project (any name, e.g. "Haveli").
-2. In that project open **APIs & Services → Library**, search **Google Sheets API**, click **Enable**.
-3. Open **IAM & Admin → Service accounts → Create service account**. Name it "haveli". Skip the optional steps and click **Done**.
-4. Click the new service account → **Keys → Add key → Create new key → JSON**. A `.json` file downloads. **This file is a password. Keep it private.**
-5. Open the JSON file in a text editor. Copy the value of `client_email` (looks like `haveli@your-project.iam.gserviceaccount.com`).
-6. Open your Google Sheet → **Share** → paste that email → give it **Editor** → untick "Notify" → **Share**.
-7. Leave the sheet empty. After the first sign-in, the owner opens **Settings → Set up sheet** and the app creates its tabs (Rooms, Guests, Bookings, Payments, Staff) and columns. An older v0.1 sheet is upgraded the same way, nothing is lost.
+Run `npm run setup`. It asks a few questions, checks the Google connection and writes `.env`. (`npm run setup -- --check` tests an existing `.env`.)
 
-## 3. Fill in `.env`
+Or copy `.env.example` to `.env` and fill in by hand:
 
-1. Copy `.env.example` to a new file called `.env` (same folder).
-2. **SHEET_ID**: paste the sheet's address from the browser, or just the long id between `/d/` and `/edit`.
-3. **GOOGLE_SERVICE_ACCOUNT_JSON**: open the downloaded JSON file in a text editor, select everything, and paste it after the `=` inside single quotes, exactly as it is (it may span many lines, that is fine):
-   `GOOGLE_SERVICE_ACCOUNT_JSON='{ ... the whole file ... }'`
-4. **OWNER_PASSWORD**: the owner's password (8+ characters). `APP_PASSWORD` from version 0.1 still works as the owner password.
-5. **SESSION_SECRET**: any long random text (24+ characters). To make one: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
-6. **HOTEL_NAME**: shown on the sign-in screen. Optional: `OWNER_USERNAME` (default `owner`), `OWNER_NAME`, `HOTEL_TIMEZONE`.
+| Setting | Meaning |
+|---|---|
+| `SHEET_ID` | The sheet's address, or the long id between `/d/` and `/edit`. |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | The whole downloaded key file, pasted inside single quotes. |
+| `OWNER_PASSWORD` | The owner's password (8+ characters; **12+ if the app is on the internet**). |
+| `SESSION_SECRET` | Long random text (24+ characters): `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `HOTEL_NAME` | **The hotel's name**, shown as the logo everywhere. Restart after changing it. |
+| `OWNER_USERNAME`, `OWNER_NAME`, `HOTEL_TIMEZONE` | Optional. Defaults: `owner`, `Owner`, `Asia/Kolkata`. |
+| `PORT`, `HOST`, `TRUST_PROXY`, `MEDIA_DIR` | Optional, for running on the web: see the next section. |
 
-**Shortcut:** `npm run setup` asks these questions, checks the Google connection and writes `.env` for you. `npm run setup -- --check` tests an existing `.env`.
+`.env` is ignored by git. If the key ever leaks, delete it in Google Cloud and create a new one.
 
-`.env` is ignored by git, so it never leaves your computer. If a key ever leaks, delete it in Google Cloud and create a new one.
-
-## 4. Run it
+### 3. Run
 
 ```bash
 npm install
-npm run dev            # open http://localhost:5173
+npm run dev              # development, http://localhost:5173
 ```
-
-For everyday use (faster, one process):
 
 ```bash
-npm run build
-npm start              # open http://localhost:3000
+npm run build            # everyday use: build once...
+npm start                # ...then http://localhost:3000
 ```
 
-Open it from phones on the same Wi-Fi: start with `HOST=0.0.0.0 npm start` (Windows PowerShell: `$env:HOST="0.0.0.0"; npm start`) and visit `http://<this-computer's-ip>:3000`. Only do this on a network you trust: anyone who knows the password gets in.
+**First sign-in:** user `owner` + the owner password → **Settings** → **Set up sheet** → **Quick room setup** → **Add employee** for each person.
+The app re-reads the sheet every 45 seconds, so edits made directly in Google Sheets show up by themselves.
 
-The app checks the sheet every 45 seconds, so edits made directly in Google Sheets show up on their own.
+## Use it from anywhere (phone, tablet, any browser)
 
-**First run:** sign in as `owner` with the owner password → **Settings** → *Set up sheet* → *Quick room setup* → *Add employee* for each person. Settings also lists anything wrong with the sheet (missing tab or column, sheet not shared, rows it could not read).
+By default the app listens on this computer only. To let the owner open it from any device, it must be reachable at an **https address**. Three ways, easiest first. Whichever you pick, the rules are the same:
 
-## 5. How it behaves
+- **Use HTTPS only.** Over plain http, passwords travel readable. Never open the port to the internet directly.
+- **Use a long owner password** (12+ characters). The server warns at start if it is short.
+- **Run exactly one copy** of the app per sheet.
+- Set `TRUST_PROXY=1` when a host, tunnel or proxy sits in front (it makes sign-in limits and the secure cookie work on the visitor's real address). Hosting services below are detected automatically.
+- `GET /health` answers `ok` with no sign-in, for uptime checks.
+- The background file lives in `media/` (or `MEDIA_DIR`). On a host whose disk is wiped on every restart, attach a persistent disk and point `MEDIA_DIR` at it, otherwise the background resets to plain. Nothing else is stored on disk.
 
-- **Stages:** Reserved → Checked in → Checked out, or Cancelled. Drag a card on the Bookings board, or use the `…` menu.
-- **Rooms** show *Occupied* automatically while a guest is checked in. You set *Available*, *Cleaning* or *Maintenance*. Checking a guest out puts the room into *Cleaning*.
-- **Double booking** is blocked: a room cannot be booked for dates that overlap an active booking.
-- **Payments** are separate from stages: `…` → *Payment or refund*. Each one is a dated row in the **Payments** tab with the employee's name; "Paid" on a booking is the sum of its payments. Refunds need a reason. Checking out does not mark anything as paid.
-- **Discount** is taken off the room total (₹ or %) and is saved with the booking. **Edit booking** (`…` menu) can fix anything later; after check-out only guest details, notes and discount stay editable.
-- **Several rooms, one booking:** tick as many free rooms as needed; the rate shown is the combined nightly rate.
-- **Theme and background:** the sun/moon button next to the bell switches dark and light for you only (it is remembered per person). The **background** is chosen once by the owner and is the same for everyone. The file is kept in the `media/` folder next to the app (or the folder in `MEDIA_DIR`), not in the Google Sheet, and the server checks it again whatever the browser says: real file type, size, and for a video its length. On phones and with "reduce motion" on, a video background shows a still frame to save battery. It needs a server with a **writable disk** (your own computer or server); hosting with a read-only disk cannot keep it.
-- **Undo** appears after a stage change.
-- **Two people at once:** saves are queued, so two staff members booking the same room at the same moment cannot both succeed. Run only one copy of the app against a sheet.
-- **Safety:** each person has their own login (employee passwords are stored scrambled, never readable), the Google Sheet link is only revealed after the owner password is typed, login attempts are rate-limited, the session cookie is HttpOnly, and every change request carries an anti-forgery header. Text typed into the app is stored as plain text in the sheet, so a guest named `=HYPERLINK(...)` cannot run as a formula.
+### A. A hosting service (Render, Railway, Fly.io, Cloud Run, Heroku)
 
-## 6. Sheet tabs
+Example with **Render** (https://render.com). The repository must be on GitHub (**private** is fine).
 
-Columns are found **by header name**, so you can reorder them or add your own extra columns. The owner's **Set up sheet** button adds any tab or column that is missing and never deletes anything.
+1. **New → Web Service** → pick the repository. Runtime **Node**.
+2. Build command: `npm install --include=dev && npm run build`
+3. Start command: `npm start`
+4. Health check path: `/health`
+5. **Environment** → add `SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` (paste the whole key file), `OWNER_PASSWORD`, `SESSION_SECRET`, `HOTEL_NAME`, `HOTEL_TIMEZONE`. No `.env` file is needed there.
+6. Optional, for the background: add a **Disk** (paid plans) mounted at e.g. `/var/data` and set `MEDIA_DIR=/var/data/media`.
+7. Deploy. Render gives an `https://…onrender.com` address. Free plans may sleep when idle (the first request is slow); paid plans do not.
 
-| Tab | What it holds |
+Other services use the same build and start commands and the same variables. They set `PORT` themselves and the app listens on all addresses there automatically.
+
+### B. Your own server (VPS) with a domain
+
+On a small Linux server (Ubuntu) with Node 20+, a domain name pointing at it, and ports 80 and 443 open:
+
+1. Copy the project (or a customer release folder) to the server, create `.env` (use `npm run setup`), then `npm install && npm run build`. In a release folder there is nothing to build: run `node server.mjs`.
+2. Keep it running: `npm install -g pm2`, then `pm2 start "npm start" --name hotel`, `pm2 save`, `pm2 startup`.
+3. Add `TRUST_PROXY=1` to `.env`. Leave `HOST` unset so only the proxy can reach the app.
+4. Install Caddy (https://caddyserver.com), which gets the https certificate by itself. `/etc/caddy/Caddyfile`:
+   ```
+   hotel.example.com {
+       reverse_proxy localhost:3000
+   }
+   ```
+   then `sudo systemctl reload caddy`. Open `https://hotel.example.com`.
+
+### C. The hotel's own computer, through a Cloudflare Tunnel
+
+No server to rent; the computer must stay on. Free Cloudflare account and a domain managed in Cloudflare for a permanent address.
+
+1. Start the app (`npm start`, or `start.bat` in a customer folder) with `TRUST_PROXY=1` in `.env`.
+2. Install `cloudflared` and create a tunnel whose public hostname points to `http://localhost:3000` (follow Cloudflare's current Zero Trust → Tunnels instructions).
+3. Quick test without a domain: `cloudflared tunnel --url http://localhost:3000` prints a temporary `https://….trycloudflare.com` address that changes each time.
+
+### Show a live demo to a buyer
+
+`npm run build:demo` makes `dist-demo/`, a static copy running on made-up data. Upload that folder to any static host (Netlify, Cloudflare Pages, GitHub Pages). It has no server and no real data.
+
+## Daily use
+
+- **Rooms** show *Occupied* automatically while a guest is checked in; you set *Available*, *Cleaning* or *Maintenance*. Checking out puts the room into *Cleaning*.
+- **Payments** are separate from stages: `…` → *Payment or refund*. Each is a dated row in the Payments tab with the employee's name; "Paid" is their sum. Refunds need a reason.
+- **Edit booking** (`…` menu) can fix anything later; after check-out only guest details, notes and discount stay editable. **Undo** appears after a stage change.
+- **Two people at once:** saves are queued, so two staff cannot both book the same room at the same moment.
+- **Security:** employee passwords are stored scrambled; the Google Sheet link is shown only after the owner password is typed; sign-in attempts are rate-limited; the session cookie is HttpOnly (and Secure on https); every change carries an anti-forgery header; text typed into the app is stored as plain text, so `=HYPERLINK(...)` cannot run as a formula.
+- **Background files** are checked again on the server: real file type, size, and a video's length. On phones and with "reduce motion" a video shows a still frame.
+
+## Sheet tabs
+
+Columns are found **by header name**: reorder them or add your own. **Set up sheet** adds any missing tab or column and never deletes anything.
+
+| Tab | Holds |
 |---|---|
 | **Rooms** | one row per room: number, floor, type, bed, sleeps, rate, status |
 | **Guests** | one row per guest: name, mobile, email, ID, city |
-| **Bookings** | one row per booking (a family with 3 rooms is one row, rooms listed like `101, 102, 103`), with dates, discount, total, paid, balance, stage, **created by**, **updated by** |
-| **Payments** | one row per payment or refund: date and time, booking, amount (refunds negative), method, **by whom** |
+| **Bookings** | one row per booking (3 rooms = one row, listed `101, 102, 103`): dates, discount, total, paid, balance, stage, created by, updated by |
+| **Payments** | one row per payment or refund: date and time, booking, amount (refunds negative), method, by whom |
 | **Staff** | employees: username, name, role, active, scrambled password. Managed from Settings; do not edit by hand |
 
-**Keep the sheet private to the owner.** Anyone with edit access to the sheet can change anything in it, and could read employee names. Employees do their work inside the app.
+Keep the sheet private to the owner: anyone with edit access can change anything. Employees work inside the app.
 
-## 7. Updating the app (zip workflow)
+## Project structure
 
-New versions arrive as a zip. Unzip it **over** your project folder, keeping your `.env`, `media/` and `node_modules`, then:
-
-```bash
-npm install     # only needed if package.json changed
-npm run build   # if you use npm start
+```
+api/                     the server logic (no website code)
+  handler.ts               one entry point for every /api/<action>: finds the route, checks who may call it
+  routes/                  one file per subject: session, data, bookings, rooms, staff, sheet, background
+  sheets/                  everything about the Google Sheet
+    schema.ts                tab and column definitions
+    google.ts                Google sign-in and REST calls
+    access.ts                raw reading and writing, and the queue that serialises writes
+    read.ts                  sheet rows -> rooms, guests, bookings, payments, staff
+    bookings.ts · rooms.ts · staff.ts   the changes the app makes
+    setup.ts · health.ts     "Set up sheet", connection check
+    style.ts                 the Clay & Sand look of the sheet
+  auth/                    password scrambling, signed sign-in cookie, sign-in rate limit
+  media/                   the owner's background file: checks, storing
+  lib/                     .env reading, request and error helpers, form parsing
+server/                  the small web server: start.ts, network.ts (public/https), static.ts, media-serve.ts, adapt.ts, dotenv.ts
+shared/                  used by BOTH the website and the server
+  rules/                   validation, discounts, room clashes, stage changes (one file each)
+  types/                   data shapes (booking, rooms, guests, staff, session, background)
+  constants.ts · dates.ts
+src/                     the website (React + TypeScript)
+  App.tsx                  loads who is signed in, theme, welcome animation, then sign-in or the app
+  app/                     the frame: Login, Shell, Sidebar, Topbar, Bell, Layers (pop-ups), ConfirmLogout
+  features/                one folder per screen: dashboard, bookings, rooms, guests, analytics, settings
+  components/              reusable pieces: Icon, Chips, Layer (pop-up/drawer), Toasts, charts, Brand, Backdrop, ThemeSwitch
+  state/                   the app's data and actions (store.tsx)
+  lib/                     helpers: api.ts, demo/ (the made-up hotel), format, selectors, theme, background
+  styles/                  base/ = layout and colour tokens · theme/ = the Clay & Sand look · index.css = load order
+public/fonts/            fonts bundled with the app (nothing is fetched from Google Fonts) and their licences
+scripts/                 setup.mjs (wizard), release.mjs (customer folder), customer/ (start scripts, licence, guide)
+tests/                   api/, server/, shared/, scripts/, helpers/ (no internet needed)
 ```
 
-## 8. Checks
+| To change… | Open |
+|---|---|
+| Hotel name | `.env` → `HOTEL_NAME` |
+| A booking rule (discount, clash, what is required) | `shared/rules/` |
+| How something is written to the sheet | `api/sheets/` (`bookings.ts`, `rooms.ts`, `staff.ts`) |
+| Add or change an API action | `api/routes/` (+ `api/lib/input.ts` to check its input) |
+| The colours of the app | `src/styles/base/tokens.css` |
+| The look of one area | `src/styles/theme/<area>.css` |
+| A screen | `src/features/<screen>/` |
+| The menu, top bar, sign-in | `src/app/` |
+| The demo hotel | `src/lib/demo/` |
 
-```bash
-npm test             # 159 tests: booking rules, API, sign-in, setup wizard, background upload checks, sheet styling (no internet needed)
-npm run typecheck    # TypeScript check of the whole project
-```
+## Commands
+
+| Command | Does |
+|---|---|
+| `npm run dev` / `npm run dev:demo` | Development server, real sheet / made-up data |
+| `npm run build` then `npm start` | Everyday use (`http://localhost:3000`) |
+| `npm run build:demo` | Static demo in `dist-demo/` |
+| `npm test` | 176 tests: rules, API, sign-in, setup, background checks, sheet styling, web serving |
+| `npm run typecheck` | TypeScript check of the whole project |
+| `npm run setup` | The `.env` wizard |
+| `npm run release -- --licensee "Hotel Name"` | A customer zip in `release/` |
+
+Updating from a new zip: unzip over the project keeping `.env`, `media/` and `node_modules`; run `npm install` if `package.json` changed and `npm run build` if you use `npm start`. Then, as owner, press **Set up sheet** once.
 
 ## Troubleshooting
 
 | You see | Do this |
 |---|---|
-| "The server is not set up yet" | The listed names in `.env` are empty or wrong. Restart after editing `.env`. |
-| "GOOGLE_SERVICE_ACCOUNT_JSON (not valid JSON)" | The key is cut off or is the wrong file. Open the downloaded key file, copy **everything** from the first `{` to the last `}`, and paste it inside single quotes. Then restart. |
-| "Share the sheet with …" | Step 2.6: share the sheet with the service account email as **Editor**. |
-| "Set up the sheet first" / "no tab called …" | Sign in as the owner → Settings → **Set up sheet**. |
+| "The server is not set up yet" | The names listed in `.env` are empty or wrong. Restart after editing `.env`. |
+| "GOOGLE_SERVICE_ACCOUNT_JSON (not valid JSON)" | Copy **everything** from the first `{` to the last `}` of the key file, inside single quotes. |
+| "Share the sheet with …" | Share the sheet with the service account email as **Editor**. |
+| "no tab called …" | Owner → Settings → **Set up sheet**. |
+| The sheet looks plain or text is faint in a tab | Owner → Settings → **Set up sheet** (restyles every tab; no data changes). |
 | An employee cannot sign in | Settings → Employees → Edit: tick *Can sign in*, or set a new password. |
-| A background video is refused | Keep it **15 seconds or less** and under 20 MB, as MP4 (H.264) or WebM. A phone video trimmed in its gallery app works. |
-| The sheet still looks plain | Sign in as owner → Settings → **Apply Clay & Sand style**. Your own colours on the same cells may override it. |
-| "Sheet not found" | `SHEET_ID` is wrong. |
+| A background video is refused | 15 seconds or less, under 20 MB, MP4 (H.264) or WebM. |
+| Works on the computer but not from a phone | Use the https address from "Use it from anywhere". Plain `http://<ip>:3000` works only on the same Wi-Fi and needs `HOST=0.0.0.0`. |
+| Many "too many wrong attempts" on the web | `TRUST_PROXY=1` is missing, so everyone looks like one visitor. |
 | Port already in use | `PORT=3001 npm start` |
-| Changed `.env` but nothing changed | Stop the server (Ctrl+C) and start it again. |
+| Changed `.env` but nothing changed | Stop (Ctrl+C) and start again. |
 
-## Project map
+**Keep the repository private.** Never commit `.env`, `media/` or the Google key.
 
-```
-shared/   rules both sides use (validation, discounts, clash detection, dates)
-api/      the server logic: sign-in, staff, Google Sheets access
-server/   tiny web server for `npm start`
-src/      the website (React). pages/ = screens, modals.tsx = pop-ups, theme.css = the Clay & Sand look
-public/    fonts (Inter, Baskerville) bundled with the app, so it works offline and sends nothing to Google Fonts
-media/     the owner's background file (created on first upload; not in git)
-scripts/  setup.mjs (wizard), release.mjs (customer folder), customer/ (start scripts, licence, guide)
-tests/    automated tests
-```
+## Selling it to hotels and franchises
 
-**Keep this repository private.** Never commit `.env` or the Google JSON key.
+Each hotel gets its **own copy, its own Google Sheet and its own Google key**, so one hotel never sees another's data and you never hold theirs.
 
-## Selling Haveli to hotels and franchises
+1. `npm install`, then `npm run release -- --licensee "Customer Hotel Name"` (optional `--seller "Your Company"`).
+2. This makes `release/haveli-<version>-<customer>.zip`: the built website, one bundled server file, the setup wizard, `start.bat` / `start.sh`, a licence stamped with the customer's name and `CUSTOMER-GUIDE.md`. No source code, tests or secrets. The customer needs only Node.js 20.
+3. The customer follows the guide (Google Sheet and key, double-click `start.bat`, answer the wizard). The wizard asks for the hotel's name, which becomes the logo everywhere. You can do it for them over a screen-share, and set up web access with the section above.
 
-**How a sale works.** Each hotel (or franchise unit) gets its own copy, its own Google Sheet and its own Google "robot" key, so one hotel can never see another's data, and you never hold their data.
-
-1. `npm install` once, then `npm run release -- --licensee "Customer Hotel Name"`.
-2. That makes `release/haveli-<version>-<customer>.zip`: the built website, one bundled server file, the setup wizard, `start.bat` / `start.sh`, a licence stamped with the customer's name, and `CUSTOMER-GUIDE.md`. No source code, tests or secrets. The customer only needs Node.js 20.
-3. They follow the guide: make a Google Sheet and key (10 minutes), double-click `start.bat`, answer the wizard, sign in as owner, press *Set up sheet*, *Quick room setup*, add employees. You can do this for them over a screen-share.
-4. `npm run release -- --seller "Your Company"` changes the licensor name on the licence (default: Swayam Koli).
-
-**Be clear-eyed about protection.** The shipped files are bundled and minified, but any program that runs on a customer's computer can in principle be copied. Real protection is the **licence** (`scripts/customer/LICENSE.txt`: one property per licence, no resale or hosting for others), a written sale agreement, paid updates/support, and per-customer builds so a leaked copy names its source. The licence is a template: have a lawyer adapt it to your jurisdiction and pricing before you rely on it.
-
-**Later options:** a hosted version you run for them (monthly fee, you keep it updated, but then you hold their data and need a multi-customer database), or a licence-key check against your own server.
-
+**Protection:** the shipped files are bundled and minified, but any program on a customer's computer can in principle be copied. Real protection is the **licence** (`scripts/customer/LICENSE.txt`: one property per licence, no resale), a written sale agreement, paid updates and support, and per-customer builds so a leaked copy names its source. The licence is a template: have a lawyer adapt it to your country and pricing.

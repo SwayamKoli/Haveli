@@ -5,7 +5,7 @@
 import { createReadStream, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname, join } from 'node:path';
-import { MEDIA_TYPES, mediaDir, servedName } from '../api/_lib/media';
+import { MEDIA_TYPES, mediaDir, servedName } from '../api/media/media';
 
 /** Returns true when the request was a /media/ request (answered here). */
 export function serveMedia(req: IncomingMessage, res: ServerResponse): boolean {

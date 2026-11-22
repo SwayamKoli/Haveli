@@ -214,7 +214,7 @@ async function runSetup() {
     copyFileSync(ENV_FILE, resolve(process.cwd(), '.env.backup'));
   }
 
-  const hotel = (await q.ask('Hotel name (shown on the sign-in screen)', 'My Hotel')).replace(/[\r\n]/g, ' ');
+  const hotel = (await q.ask('Hotel name (shown as the logo, on the sign-in screen and in the welcome animation)', 'My Hotel')).replace(/[\r\n]/g, ' ');
   const ownerName = (await q.ask('Owner name', 'Owner')).replace(/[\r\n]/g, ' ');
   let ownerUser = (await q.ask('Owner username', 'owner')).toLowerCase().replace(/[^a-z0-9._-]/g, '');
   if (!ownerUser) ownerUser = 'owner';

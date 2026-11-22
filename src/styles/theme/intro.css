@@ -1,0 +1,17 @@
+/* Clay & Sand: the welcome animation. */
+.intro{position:fixed;inset:0;z-index:300;display:grid;place-items:center;cursor:pointer;background:radial-gradient(900px 620px at 50% 42%,var(--intro-a) 0%,var(--intro-b) 74%);animation:introOut .55s ease 1.75s forwards}
+.intro-in{display:flex;flex-direction:column;align-items:center;gap:16px}
+.intro-mark{display:grid;place-items:center;width:78px;height:78px;border-radius:22px;font-size:38px;color:var(--accent-text);background:rgb(var(--ac) / .15);border:1px solid rgb(var(--ac) / .4);animation:introMark .9s cubic-bezier(.2,.9,.25,1.15) both}
+.intro-word{display:flex;flex-wrap:wrap;justify-content:center;column-gap:.28em;row-gap:.1em;max-width:min(92vw,900px);font-family:var(--serif);font-size:64px;font-weight:400;letter-spacing:.01em;line-height:1.1;text-align:center;color:var(--text)}
+.intro-word[data-size=m]{font-size:56px}
+.intro-word[data-size=s]{font-size:46px}
+.intro-word[data-size=xs]{font-size:38px}
+.intro-w{display:inline-flex}
+.intro-word span{display:inline-block;opacity:0;transform:translateY(20px);animation:introLetter .65s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(.35s + var(--i) * .07s)}
+.intro-sub{letter-spacing:.34em;text-transform:uppercase;font-size:11.5px;color:var(--muted);opacity:0;animation:introFade .6s ease 1s forwards}
+.intro-line{width:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:introLine 1s ease .6s forwards}
+@keyframes introMark{from{opacity:0;transform:scale(.6) rotate(-8deg)}to{opacity:1;transform:none}}
+@keyframes introLetter{to{opacity:1;transform:none}}
+@keyframes introFade{to{opacity:1}}
+@keyframes introLine{to{width:min(260px,60vw)}}
+@keyframes introOut{to{opacity:0;visibility:hidden;pointer-events:none}}

@@ -1,6 +1,6 @@
 {
   "name": "haveli",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Hotel management dashboard backed by Google Sheets",
   "type": "module",
@@ -16,7 +16,7 @@
     "setup": "node scripts/setup.mjs",
     "release": "node scripts/release.mjs",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
-    "test": "tsx --test tests/rules.test.ts tests/api.test.ts tests/dotenv.test.ts tests/setup.test.ts tests/media.test.ts tests/style.test.ts",
+    "test": "tsx --test tests/api/auth.test.ts tests/api/background.test.ts tests/api/bookings.test.ts tests/api/concurrency.test.ts tests/api/reading.test.ts tests/api/sheet-setup.test.ts tests/api/sheet-style.test.ts tests/api/stages-rooms-payments.test.ts tests/scripts/setup.test.ts tests/server/dotenv.test.ts tests/server/web.test.ts tests/shared/rules.test.ts",
     "check": "npm run typecheck && npm test"
   },
   "dependencies": {

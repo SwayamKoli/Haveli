@@ -1,0 +1,56 @@
+/* Foundation: the bundled fonts, the colours of the dark and the light theme (change these to re-colour the whole app), and the page defaults. */
+@font-face{font-family:"Inter";font-weight:400;font-style:normal;font-display:swap;src:url(/fonts/Inter-Regular.woff) format("woff")}
+@font-face{font-family:"Inter";font-weight:500;font-style:normal;font-display:swap;src:url(/fonts/Inter-Medium.woff) format("woff")}
+@font-face{font-family:"Inter";font-weight:600;font-style:normal;font-display:swap;src:url(/fonts/Inter-SemiBold.woff) format("woff")}
+@font-face{font-family:"Haveli Serif";font-weight:400;font-style:normal;font-display:swap;src:url(/fonts/Baskerville.woff) format("woff")}
+:root,:root[data-theme=dark]{
+  --bg:#120B09;--bgc:18 11 9;
+  --panel:#19110E;--card:#1F1511;--card-hi:#291C16;--pop:#21160F;
+  --t:255 226 196;--sh:0 0 0;--ac:229 128 90;
+  --line:rgb(var(--t) / .11);--line-2:rgb(var(--t) / .19);
+  --text:#F7E9D7;--muted:#BBA692;--faint:#8D7A69;
+  --accent:#E5805A;--accent-deep:#C9663F;--accent-hi:#F2956F;--accent-text:#F2956F;--ink:#2A0F06;
+  --good:#8CC39B;--warn:#EBBA62;--bad:#E4607C;--info:#9DB4E8;
+  --good-rgb:140 195 155;--warn-rgb:235 186 98;--bad-rgb:228 96 124;--info-rgb:157 180 232;
+  --bar-a:#D9714F;--bar-b:#E7B866;
+  --toast-bg:#F2E5D2;--toast-fg:#2A1A14;
+  --wash-a:rgb(158 62 36 / .46);--wash-b:rgb(236 156 88 / .17);
+  --grain:.06;
+  color-scheme:dark;
+}
+:root[data-theme=light]{
+  --bg:#F3E9DC;--bgc:255 250 244;
+  --panel:#FBF6EE;--card:#FFFDF9;--card-hi:#FFF7EC;--pop:#FFFBF5;
+  --t:42 26 20;--sh:70 40 20;--ac:180 71 42;
+  --line:rgb(var(--t) / .11);--line-2:rgb(var(--t) / .19);
+  --text:#2A1A14;--muted:#6E5A4E;--faint:#98877A;
+  --accent:#B4472A;--accent-deep:#8F3720;--accent-hi:#CF5C3A;--accent-text:#A63F23;--ink:#FFF3EA;
+  --good:#3B7B4F;--warn:#A8660F;--bad:#A8332A;--info:#3F5FA8;
+  --good-rgb:59 123 79;--warn-rgb:168 102 15;--bad-rgb:168 51 42;--info-rgb:63 95 168;
+  --bar-a:#B4472A;--bar-b:#C98A2E;
+  --toast-bg:#2A1A14;--toast-fg:#F7E9D7;
+  --wash-a:rgb(255 255 255 / .95);--wash-b:rgb(217 113 79 / .24);
+  --grain:.05;
+  color-scheme:light;
+}
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--serif:"Haveli Serif","GFS Baskerville","Palatino Linotype",Palatino,Georgia,serif}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  box-sizing:border-box;margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.45;
+  padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4,p{margin:0}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block}
+.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.app{height:100%;display:flex;gap:14px;min-width:0}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}

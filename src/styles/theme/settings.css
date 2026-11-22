@@ -1,0 +1,28 @@
+/* Clay & Sand: the Settings page, including the theme and background choices. */
+.set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.set-grid .wide-card{grid-column:1/-1}
+.set-grid .stack{flex-direction:row;flex-wrap:wrap}
+.checks{display:flex;flex-direction:column}
+.checks .row small{white-space:normal}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.opt{display:flex;flex-direction:column;gap:9px;text-align:left;padding:9px;border-radius:13px;border:1px solid var(--line-2);background:rgb(var(--t) / .035);transition:border-color .15s,background .15s}
+.opt:hover:not(:disabled){background:rgb(var(--t) / .07)}
+.opt.on{border-color:var(--accent);box-shadow:0 0 0 3px rgb(var(--ac) / .16)}
+.opt:disabled{opacity:.5;cursor:not-allowed}
+.opt-sw{height:68px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);font-size:22px;overflow:hidden;position:relative}
+.opt-sw.s-dark{background:radial-gradient(120px 80px at 15% 0%,rgb(158 62 36 / .5),transparent 70%),#120B09;color:#F7E9D7}
+.opt-sw.s-light{background:radial-gradient(120px 80px at 15% 0%,#fff,transparent 70%),#F3E9DC;color:#2A1A14}
+.s-plain{background:radial-gradient(120px 80px at 15% 0%,var(--wash-a),transparent 70%),radial-gradient(120px 80px at 100% 100%,var(--wash-b),transparent 70%),var(--bg)}
+.opt-sw.s-scene{background:linear-gradient(180deg,#140908,#43201a 55%,#ef9d5c)}
+.opt-sw.s-scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:#1f0d09;clip-path:polygon(0 100%,0 40%,12% 40%,16% 10%,20% 40%,40% 40%,45% 0,50% 40%,70% 40%,76% 14%,82% 40%,100% 40%,100% 100%)}
+.opt b{font-weight:550;font-size:13.5px}
+.opt small{color:var(--muted);font-size:12px;line-height:1.35;margin-top:-6px}
+.bgprev{position:relative;width:100%;aspect-ratio:16/9;border-radius:13px;overflow:hidden;border:1px solid var(--line-2);background:rgb(var(--t) / .05);display:grid;place-items:center;color:var(--muted)}
+.bgprev img,.bgprev video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bgprev .scene{position:absolute;inset:0}
+.bgprev .scene svg{width:100%;height:100%;display:block}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.hintline{color:var(--muted);font-size:12.5px;line-height:1.55}
+.okline{color:var(--good);font-size:13px}
+.errline{color:var(--bad);font-size:13px;line-height:1.5}

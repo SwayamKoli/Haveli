@@ -4,8 +4,7 @@
  * matter here: USER_ENTERED turns "2026-11-11" into a date number, a leading
  * apostrophe keeps text as text, "=..." becomes a formula.
  */
-import { createVerify, generateKeyPairSync } from 'node:crypto';
-import type { KeyObject } from 'node:crypto';
+import { createVerify, generateKeyPairSync, type KeyObject } from 'node:crypto';
 
 type Cell = string | number | undefined;
 
@@ -57,6 +56,8 @@ export class FakeGoogle {
   /** Formulas written by the app, keyed like "Bookings!G2". */
   formulas: Record<string, string> = {};
   calls: string[] = [];
+  /** The insertDataOption of every append. OVERWRITE means no new rows are inserted, so no row copies the header's look. */
+  appendModes: (string | null)[] = [];
   /** How many batchUpdate calls succeeded. */
   batches = 0;
   /** When set, adding banded rows is refused with this message (to test that styling never breaks setup). */
@@ -295,6 +296,7 @@ export class FakeGoogle {
     const append = /^\/values\/([^!]+)!A1:append$/.exec(rest);
     if (append && method === 'POST') {
       const tab = append[1];
+      this.appendModes.push(u.searchParams.get('insertDataOption'));
       const incoming = (body.values as unknown[][]) ?? [];
       const first = this.tabs[tab].length + 1;
       let width = 1;

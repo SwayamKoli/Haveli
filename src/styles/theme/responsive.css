@@ -1,0 +1,26 @@
+/* Clay & Sand: phone and tablet adjustments. */
+@media (max-width:900px){.set-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:820px){
+  .side{background:var(--pop)}
+  .main{padding:18px}
+  .ph h1{font-size:30px}
+}
+@media (max-width:560px){
+  .pop{position:fixed;top:78px;left:16px;right:16px;width:auto;transform-origin:calc(100% - 40px) 0}
+  .pop::before{right:60px}
+  .rfl{width:100%;padding-top:0}
+  .rrow{flex-direction:column;gap:4px}
+  .split{grid-template-columns:minmax(0,1fr) 96px}
+  .intro-word{font-size:50px}
+  .intro-word[data-size=m]{font-size:42px}
+  .intro-word[data-size=s]{font-size:34px}
+  .intro-word[data-size=xs]{font-size:28px}
+  .top{gap:8px;padding:8px 10px}
+  .tswitch{width:40px;padding:0;justify-content:center}
+  .tswitch::before{display:none}
+  .tswitch .ic:not(.now){display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .bgfx .layer{transition:none}
+  .scene *{animation:none!important}
+}

@@ -1,3 +1,6 @@
+/**
+ * Fixed lists and labels used by both the website and the server: stages, room states, sources, payment methods, staff roles, default room types.
+ */
 import type { RoomManual, RoomState, Stage } from './types';
 
 export const STAGES: Stage[] = ['reserved', 'in', 'out', 'cancelled'];

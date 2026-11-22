@@ -1,3 +1,6 @@
+/**
+ * Dark and light: the saved choice for this device and for each signed-in person, applied to the page.
+ */
 import { useCallback, useSyncExternalStore } from 'react';
 
 /**

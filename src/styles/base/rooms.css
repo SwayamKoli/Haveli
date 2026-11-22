@@ -1,0 +1,12 @@
+/* Rooms page. */
+/* rooms */
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:12px}
+.room{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:6px;transition:transform .15s,border-color .15s;min-width:0}
+.room:hover{transform:translateY(-2px);border-color:var(--line-2)}
+.room .rn{font-size:28px;font-weight:300;letter-spacing:-.02em;line-height:1}
+.room .rt{color:var(--muted);font-size:12.5px}
+.room .rg{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:17px}
+.room .rp{display:flex;justify-content:space-between;align-items:center;margin-top:4px;gap:8px}
+.room .rp span:first-child{font-size:12.5px;color:var(--muted)}
+.fl{margin:20px 0 10px;color:var(--muted);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.fl:first-child{margin-top:0}

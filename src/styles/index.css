@@ -1,0 +1,26 @@
+/* Every style of the app, loaded in this order (later files refine earlier ones). base/ = layout and colour tokens, theme/ = the Clay & Sand look. */
+@import './base/tokens.css';
+@import './base/sidebar.css';
+@import './base/topbar.css';
+@import './base/main.css';
+@import './base/dashboard.css';
+@import './base/bookings.css';
+@import './base/rooms.css';
+@import './base/tables.css';
+@import './base/barlist.css';
+@import './base/overlays.css';
+@import './base/responsive.css';
+@import './theme/surfaces.css';
+@import './theme/backdrop.css';
+@import './theme/sidebar.css';
+@import './theme/topbar.css';
+@import './theme/main.css';
+@import './theme/cards.css';
+@import './theme/lists.css';
+@import './theme/overlays.css';
+@import './theme/bell.css';
+@import './theme/login.css';
+@import './theme/intro.css';
+@import './theme/booking-form.css';
+@import './theme/settings.css';
+@import './theme/responsive.css';

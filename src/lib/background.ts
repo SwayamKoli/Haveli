@@ -1,6 +1,8 @@
+/**
+ * Applies the owner's chosen background (plain, scene, photo, video) to the page and lets components read it.
+ */
 import { useSyncExternalStore } from 'react';
-import { NO_BACKGROUND } from '../../shared/types';
-import type { BackgroundInfo } from '../../shared/types';
+import { NO_BACKGROUND, type BackgroundInfo } from '../../shared/types';
 
 /**
  * What is behind the website right now. One value for the whole app: the sign-in screen sets it from

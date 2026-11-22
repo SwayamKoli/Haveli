@@ -1,0 +1,19 @@
+/* Clay & Sand: the sign-in card and the loading screen. */
+.login-wrap,.splash{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:5}
+.login-card{width:min(420px,100%);overflow:visible;padding:30px 30px 26px;background:var(--pop);border-radius:22px}
+:root[data-theme=dark] .login-card{background:rgb(24 11 8 / .6);backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%)}
+:root[data-theme=light] .login-card{background:rgb(255 250 244 / .74);backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%)}
+:root[data-bg=video] .login-card{backdrop-filter:none;-webkit-backdrop-filter:none}
+:root[data-bg=video][data-theme=dark] .login-card{background:rgb(24 11 8 / .78)}
+:root[data-bg=video][data-theme=light] .login-card{background:rgb(255 250 244 / .88)}
+.login-card .logo{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.login-card .logo .lbl{font-size:32px}
+.login-card .logo .lbl[data-size=m]{font-size:28px}
+.login-card .logo .lbl[data-size=s]{font-size:23px}
+.login-card .logo .lbl[data-size=xs]{font-size:19px}
+.login-card h2{margin-top:6px}
+.login-card .hint{color:var(--faint);font-size:12px;margin-top:2px}
+.login-corner{position:fixed;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:6}
+.splash{text-align:center;color:var(--muted);align-content:center;gap:12px;grid-auto-rows:min-content}
+.splash h2{color:var(--text);font-family:var(--serif);font-weight:400;font-size:26px}
+.splash p{max-width:440px;line-height:1.6}

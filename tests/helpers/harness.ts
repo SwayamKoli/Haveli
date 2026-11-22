@@ -1,6 +1,9 @@
+/**
+ * Calls the API handler directly, the way the server does, with a signed-in cookie when needed.
+ */
 import handler from '../../api/handler';
-import type { ApiRequest, ApiResponse } from '../../api/_lib/http';
-import { resetTokenCache } from '../../api/_lib/google';
+import type { ApiRequest, ApiResponse } from '../../api/lib/http';
+import { resetTokenCache } from '../../api/sheets/google';
 import { FakeGoogle, SHEET_ID } from './fakeGoogle';
 
 export const PASSWORD = 'correct horse battery';
@@ -26,6 +29,8 @@ export function setEnv(g: FakeGoogle, overrides: Record<string, string | undefin
     HOTEL_NAME: 'Test Hotel',
     SESSION_SECRET: SECRET,
     HOTEL_TIMEZONE: 'Asia/Kolkata',
+    // Tests talk to the app the way a hosting service does: one proxy in front, adding the visitor's address.
+    TRUST_PROXY: '1',
     ...overrides,
   };
   for (const [k, v] of Object.entries(env)) {
@@ -42,6 +47,9 @@ export interface CallOptions {
   /** Leave out the anti-forgery header on purpose. */
   noCsrf?: boolean;
   ip?: string;
+  /** Extra or replacement request headers, and the address the server itself sees connecting. */
+  headers?: Record<string, string>;
+  socketIp?: string;
   /** The untouched bytes of an upload, and extra query values (such as kind=image). */
   raw?: Buffer;
   query?: Record<string, string>;
@@ -52,7 +60,8 @@ export async function call(action: string, opts: CallOptions = {}): Promise<Repl
   const headers: Record<string, string> = { 'x-forwarded-for': opts.ip ?? '10.0.0.1', 'x-forwarded-proto': 'https' };
   if (method === 'POST' && !opts.noCsrf) headers['x-requested-with'] = 'haveli';
   if (opts.cookie) headers.cookie = opts.cookie;
-  const req: ApiRequest = { method, headers, query: { action, ...opts.query }, body: opts.body, raw: opts.raw };
+  Object.assign(headers, opts.headers);
+  const req: ApiRequest = { method, headers, query: { action, ...opts.query }, body: opts.body, raw: opts.raw, ip: opts.socketIp };
 
   const out: Reply = { status: 200, body: undefined, headers: {} };
   const res: ApiResponse = {

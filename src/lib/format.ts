@@ -1,3 +1,6 @@
+/**
+ * Formatting for display: rupees, dates, plural words, minutes of the day.
+ */
 export { formatINR as inr } from '../../shared/rules';
 
 export function fmtD(iso: string): string {

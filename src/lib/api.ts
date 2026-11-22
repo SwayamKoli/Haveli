@@ -1,3 +1,6 @@
+/**
+ * What the website can ask of the server (the Backend interface), and the real implementation that talks to /api. The demo implements the same interface (lib/demo).
+ */
 import type {
   BackgroundInfo,
   Booking,
@@ -13,9 +16,9 @@ import type {
   RoomManual,
   RoomsGenerateInput,
   SessionInfo,
-  Stage,
   StaffMember,
   StaffSaveInput,
+  Stage,
 } from '../../shared/types';
 
 /** Everything the screens need from "the server". The real one talks to the sheet; the demo one lives in memory. */
@@ -40,7 +43,6 @@ export interface Backend {
   saveStaff(input: StaffSaveInput): Promise<{ staff: StaffMember[] }>;
   setupSheet(): Promise<{ changes: string[]; style?: string }>;
   /** Gives every tab of the Google Sheet the Clay & Sand look. Colours only; no data is touched. */
-  styleSheet(): Promise<{ changes: string[] }>;
   /** Plain theme or the drawn hotel scene. */
   setBackground(kind: 'none' | 'scene'): Promise<{ background: BackgroundInfo }>;
   /** A photo or a short video, shown to everyone. Replaces whatever was there before. */
@@ -71,7 +73,7 @@ async function call<T>(action: string, opts: { method?: 'GET' | 'POST'; body?: u
       body: opts.file ?? (method === 'POST' ? JSON.stringify(opts.body ?? {}) : undefined),
     });
   } catch {
-    throw new ApiError(0, 'Cannot reach the Haveli server. Check that it is running and try again.');
+    throw new ApiError(0, 'Cannot reach the server. Check that it is running and try again.');
   }
   type Body = { error?: string; fields?: FieldErrors } | null;
   const data: Body = await res.json().then(
@@ -106,7 +108,6 @@ export function makeLiveBackend(): Backend {
     listStaff: () => call('staff-list'),
     saveStaff: (input) => post('staff-save', input),
     setupSheet: () => post('sheet-setup'),
-    styleSheet: () => post('sheet-style'),
     setBackground: (kind) => post('background-set', { kind }),
     uploadBackground: (kind, file) => call(`background-upload?kind=${kind}`, { method: 'POST', file }),
     sheetLink: (password) => call('sheet-link', { method: 'POST', body: { password }, quiet401: true }),

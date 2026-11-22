@@ -1,0 +1,33 @@
+/* Clay & Sand: cards, big numbers, chips and bars. */
+.card,.stat{background:var(--glass);border-radius:16px;box-shadow:inset 0 1px 0 var(--hi),var(--shadow)}
+.card h3{font-family:var(--serif);font-size:20px;font-weight:400;line-height:1.2}
+.stat h3{font-size:14px;font-weight:450;color:var(--muted)}
+.stat .val{font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .round{width:34px;height:34px;border-radius:10px;font-size:15px}
+.stat.hi{background:rgb(var(--ac) / .13);border-color:rgb(var(--ac) / .34);box-shadow:inset 0 1px 0 var(--hi),var(--shadow)}
+.stat.hi .round{background:var(--accent);color:var(--ink);border-color:transparent}
+.stat.hi footer{color:var(--muted)}
+.stat.hi .chip{background:rgb(var(--t) / .1);color:var(--text)}
+.chip{height:24px;padding:0 10px;border-radius:12px;font-weight:550;border:1px solid var(--line);background:var(--glass);color:var(--text)}
+.chip.good,.chip.warn,.chip.bad,.chip.info,.chip.acc{gap:7px}
+.chip.good::before,.chip.warn::before,.chip.bad::before,.chip.info::before,.chip.acc::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.chip.good{background:rgb(var(--good-rgb) / .1);border-color:rgb(var(--good-rgb) / .3);color:var(--good)}
+.chip.warn{background:rgb(var(--warn-rgb) / .1);border-color:rgb(var(--warn-rgb) / .3);color:var(--warn)}
+.chip.bad{background:rgb(var(--bad-rgb) / .1);border-color:rgb(var(--bad-rgb) / .3);color:var(--bad)}
+.chip.info{background:rgb(var(--info-rgb) / .1);border-color:rgb(var(--info-rgb) / .3);color:var(--info)}
+.chip.acc{background:rgb(var(--ac) / .1);border-color:rgb(var(--ac) / .32);color:var(--accent-text)}
+p.chip{height:auto;border-radius:12px}
+.next h4{font-family:var(--serif);font-size:23px}
+.bar{border-radius:9px 9px 5px 5px;background:var(--c1);opacity:.92;filter:none}
+.bar:hover,.bar:focus-visible{filter:none;opacity:1}
+.bar.today{box-shadow:0 0 0 2px var(--card-solid),0 0 0 3.5px rgb(var(--t) / .7)}
+.hb .t{background:rgb(var(--t) / .1)}
+.hb .t i{background:var(--bar-a)}
+.seg i{border-radius:4px}
+.legend i{border-radius:3px}
+.fchip{border-radius:9px;background:var(--glass);border:1px solid var(--line)}
+.fchip.on{background:var(--accent);border-color:transparent}
+.tabs{border-bottom-color:var(--line)}
+.tab.on::after{background:var(--accent)}
+.field input{border-radius:11px;background:var(--glass)}
+.field input:focus{box-shadow:0 0 0 3px rgb(var(--ac) / .16)}

@@ -1,0 +1,20 @@
+/* Clay & Sand: the surfaces derived from the colour tokens (panel, glass, shade), and how they get denser with a picture or video behind. */
+:root,:root[data-theme=dark]{
+  --glass:rgb(var(--t) / .055);--glass-2:rgb(var(--t) / .085);--hi:rgb(var(--t) / .08);
+  --shadow:0 18px 40px -24px rgb(var(--sh) / .75);
+  --shade-a:rgb(18 9 7 / .55);--shade-b:rgb(18 9 7 / .74);--vignette:rgb(10 5 4 / .62);
+  --intro-a:#2c130c;--intro-b:#0d0705;--card-solid:#241711;
+}
+:root[data-theme=light]{
+  --glass:rgb(255 255 255 / .6);--glass-2:rgb(255 255 255 / .82);--hi:rgb(255 255 255 / .9);
+  --shadow:0 14px 34px -22px rgb(var(--sh) / .3);
+  --shade-a:rgb(243 233 220 / .42);--shade-b:rgb(243 233 220 / .6);--vignette:rgb(120 70 40 / .24);
+  --intro-a:#fff8ee;--intro-b:#ecdcc8;--card-solid:#fffaf3;
+}
+/* With a picture, a video or the scene behind the app, the panels get denser so text stays easy to read. */
+:root[data-bg=scene][data-theme=dark],:root[data-bg=image][data-theme=dark],:root[data-bg=video][data-theme=dark]{--glass:rgb(26 12 8 / .62);--glass-2:rgb(52 26 18 / .66)}
+:root[data-bg=scene][data-theme=light],:root[data-bg=image][data-theme=light],:root[data-bg=video][data-theme=light]{--glass:rgb(255 250 244 / .7);--glass-2:rgb(255 252 247 / .86)}
+
+/* A moving picture varies more than a still one, so it gets a slightly deeper cover. */
+:root[data-bg=video][data-theme=dark]{--shade-a:rgb(18 9 7 / .66);--shade-b:rgb(18 9 7 / .82)}
+:root[data-bg=video][data-theme=light]{--shade-a:rgb(243 233 220 / .58);--shade-b:rgb(243 233 220 / .74)}

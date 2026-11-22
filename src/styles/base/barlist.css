@@ -1,0 +1,7 @@
+/* The horizontal bar lists used in analytics. */
+/* bars list */
+.hb{display:flex;flex-direction:column;gap:14px}
+.hb .l{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px;font-size:13px}
+.hb .l span{color:var(--muted)}
+.hb .t{height:10px;border-radius:5px;background:rgb(var(--t) / .06);overflow:hidden}
+.hb .t i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--bar-a),var(--bar-b));transform-origin:left}

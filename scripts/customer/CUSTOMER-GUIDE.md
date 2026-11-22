@@ -54,7 +54,8 @@ The first time, it asks a few questions (hotel name, your owner password, the sh
 - The **sun/moon button** beside the bell switches between the dark and light look. Haveli remembers each person's choice.
 - **Owner only:** Settings → **Website background**. Choose *Plain* (the default), the drawn *Hotel scene*, your own *Photo* (JPG, PNG or WebP, up to 5 MB) or a *Video* (MP4 or WebM, **15 seconds or less**, up to 20 MB). Only one is used at a time and everyone sees it. For a smooth loop, pick a clip that starts and ends on the same view.
 - The file is kept in the **media** folder next to Haveli. Do not delete that folder.
-- **Google Sheet look:** Settings → **Apply Clay & Sand style** gives every tab the same colours, dropdowns and ₹ formats. It never changes your data.
+- **Your hotel's name** is the logo on the sidebar, the sign-in screen, the welcome animation and the browser tab. To change it, edit the `HOTEL_NAME=` line in the `.env` file and restart.
+- **Google Sheet look:** pressing **Set up sheet** (Settings) also gives every tab the same colours, dropdowns and ₹ formats. It never changes your data.
 
 ## Passwords and who can see what
 
@@ -69,15 +70,25 @@ The first time, it asks a few questions (hotel name, your owner password, the sh
 - The **Open the Google Sheet** button asks for the owner password every time. **Do not share the Google Sheet with employees**; they do their work inside Haveli.
 - To change the owner password, open the `.env` file in this folder in Notepad, change the `OWNER_PASSWORD=` line, save, and restart Haveli.
 
-## Using it on other devices (phone, tablet, second computer)
+## Using it from other devices and from anywhere
 
-By default Haveli opens only on the computer it runs on. To use it from phones on the **same Wi-Fi**, add this line to the `.env` file, then restart:
+By default Haveli opens only on the computer it runs on.
+
+**Phones and tablets on the same Wi-Fi (quick, inside the hotel only).** Add this line to `.env`, restart, and open `http://<this computer's address>:3000` on the phone (for example `http://192.168.1.20:3000`):
 
 ```
 HOST=0.0.0.0
 ```
 
-Then open `http://<this computer's address>:3000` on the phone (for example `http://192.168.1.20:3000`). To reach Haveli from outside the hotel, ask your IT person to put it behind an HTTPS address. Do not open the port to the internet directly.
+This is plain http, so use it only on a Wi-Fi you trust.
+
+**From anywhere (owner at home, on a trip, any browser).** Haveli must be reachable at an **https** address. Ask whoever installed Haveli to set it up, using one of these:
+
+- a hosting service (Render, Railway, Fly.io) running Haveli,
+- your own server with a domain name and Caddy, or
+- a Cloudflare Tunnel from this computer (the computer must stay on).
+
+Whichever way, add `TRUST_PROXY=1` to `.env` when something sits in front of Haveli, use an owner password of **12 or more characters**, and run **only one copy** of Haveli for your sheet. Never open the port to the internet directly.
 
 ## Backups and safety
 

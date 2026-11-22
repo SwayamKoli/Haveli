@@ -1,0 +1,35 @@
+/* Clay & Sand: the pieces of the booking form (room picker, price summary). */
+.rpick{display:grid;gap:8px;max-height:232px;overflow:auto;padding:10px;border:1px solid var(--line-2);border-radius:13px;background:rgb(var(--t) / .035);scrollbar-width:thin}
+.bad>.rpick{border-color:var(--bad)}
+.rrow{display:flex;gap:10px;align-items:flex-start}
+.rfl{flex:none;width:56px;padding-top:9px;color:var(--muted);font-size:12px}
+.rchips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.rchip{min-width:58px;max-width:84px;padding:5px 8px;border-radius:10px;border:1px solid var(--line-2);background:rgb(var(--t) / .05);display:flex;flex-direction:column;align-items:center;line-height:1.2;transition:background .15s,border-color .15s}
+.rchip b{font-weight:500;font-size:14px}
+.rchip small{font-size:10px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rchip:hover:not(:disabled):not(.on){background:rgb(var(--t) / .11)}
+.rchip.on{background:var(--accent);border-color:transparent;color:var(--ink)}
+.rchip.on small{color:var(--ink);opacity:.75}
+.rchip.on:hover:not(:disabled){background:var(--accent-hi)}
+.rchip:disabled{opacity:.38;cursor:not-allowed}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:8px}
+.ro{height:42px;display:flex;align-items:center;padding:0 12px;border-radius:11px;border:1px dashed var(--line-2);color:var(--muted)}
+p.note{margin:10px 0;padding:10px 12px;border-radius:12px;background:rgb(var(--warn-rgb) / .1);border:1px solid rgb(var(--warn-rgb) / .3);color:var(--text);font-size:13px;line-height:1.5}
+.sumbox{display:grid;gap:7px;padding:13px 15px;border-radius:14px;border:1px solid var(--line-2);background:rgb(var(--t) / .045)}
+.sumbox>div{display:flex;justify-content:space-between;gap:14px;align-items:baseline}
+.sumbox>div>span{color:var(--muted)}
+.sumbox .minus b{color:var(--good)}
+.sumbox .tot{margin-top:2px;padding:9px 0;border-block:1px dashed var(--line-2);font-size:17px}
+.sumbox .tot span{color:var(--text)}
+.sumbox .tot b{font-weight:600;font-size:19px}
+.sumbox small{color:var(--faint)}
+.paylist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.paylist li{display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-radius:11px;background:rgb(var(--t) / .05)}
+.paylist em{font-style:normal;color:var(--muted)}
+.paylist small{color:var(--faint)}
+button.linkcard{display:block;width:100%;text-align:left;color:inherit;padding:14px 16px;cursor:pointer}
+button.linkcard:hover{border-color:rgb(var(--ac) / .5)}
+.tabs2{display:inline-grid;grid-auto-flow:column;gap:4px;padding:4px;margin-bottom:14px;border-radius:12px;background:rgb(var(--t) / .06)}
+.tabs2 button{padding:8px 18px;border-radius:9px;color:var(--muted);font-size:13.5px;transition:background .15s,color .15s}
+.tabs2 button.on{background:var(--glass-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.tabs2 button:disabled{opacity:.4;cursor:not-allowed}

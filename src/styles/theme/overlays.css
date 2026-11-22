@@ -1,0 +1,20 @@
+/* Clay & Sand: pop-ups, forms and toasts. */
+.scrim{background:rgb(var(--bgc) / .6);backdrop-filter:blur(5px)}
+:root[data-bg=video] .scrim{backdrop-filter:none}
+.modal,.drawer{background:var(--pop);border-radius:20px;border-color:var(--line-2);box-shadow:0 40px 100px -30px rgb(var(--sh) / .7)}
+.modal h2,.drawer h2{font-family:var(--serif);font-size:26px;font-weight:400}
+.modal.wide{width:min(760px,100%)}
+.modal.small{width:min(430px,100%)}
+.form input,.form select{border-radius:11px;background:rgb(var(--t) / .05);border-color:var(--line-2)}
+.form input:focus,.form select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgb(var(--ac) / .18)}
+.form .bad input,.form .bad select,.form.bad input{border-color:var(--bad)}
+.form .err,.form.bad .err{color:var(--bad)}
+.form input::placeholder{color:var(--faint)}
+.form label.check{display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px;margin:0}
+.form .check input{width:18px;height:18px;padding:0;accent-color:var(--accent)}
+.kv div{background:rgb(var(--t) / .05);border-radius:12px}
+.toast{border-radius:12px;border:1px solid var(--line-2);box-shadow:0 18px 50px -14px rgb(var(--sh) / .6)}
+.toast .ic{color:var(--good)}
+:root[data-theme=dark] .toast .ic{color:#2F7A55}
+.toast.err .ic{color:var(--bad)}
+:root[data-theme=dark] .toast.err .ic{color:#B63F34}

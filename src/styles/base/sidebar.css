@@ -1,0 +1,26 @@
+/* Layout of the menu on the left. */
+.side{width:248px;flex:none;background:var(--panel);border:1px solid var(--line);border-radius:26px;padding:16px 12px;display:flex;flex-direction:column;gap:6px;overflow:hidden;z-index:40}
+.side.rail{width:76px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 6px 14px}
+.logo{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:500;letter-spacing:-.01em}
+.logo i{width:38px;height:38px;border-radius:12px;background:linear-gradient(150deg,#1d4a5c,#143644);border:1px solid var(--line-2);display:grid;place-items:center;color:var(--accent);font-size:19px}
+.sq{width:34px;height:34px;border-radius:10px;border:1px solid var(--line-2);display:grid;place-items:center;color:var(--muted);font-size:17px;transition:.2s}
+.sq:hover{color:var(--text);background:rgb(var(--t) / .05)}
+.side.rail .brand{flex-direction:column;padding-inline:0}
+.side.rail .logo .lbl{display:none}
+.grp{font-size:10.5px;letter-spacing:.14em;color:var(--faint);padding:12px 12px 6px;font-weight:500}
+.side.rail .grp{text-align:center;padding-inline:0;font-size:0}
+.side.rail .grp::after{content:"";display:block;width:18px;height:1px;background:var(--line-2);margin:6px auto}
+.nav{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:14px;color:var(--muted);font-size:14.5px;text-align:left;transition:background .2s,color .2s}
+.nav .ic{font-size:19px}
+.nav:hover{color:var(--text);background:rgb(var(--t) / .04)}
+.nav.on{color:var(--text);background:linear-gradient(90deg,rgb(var(--ac) / .16),rgb(var(--ac) / .02));}
+.nav.on::before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--text)}
+.nav .lbl{flex:1;white-space:nowrap}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--ink);font-size:11px;font-weight:600;display:grid;place-items:center}
+.side.rail .nav{justify-content:center;padding-inline:0}
+.side.rail .nav .lbl{display:none}
+.side.rail .nav .badge{position:absolute;top:4px;right:10px;min-width:16px;height:16px;font-size:10px;padding:0 4px}
+.side .spacer{flex:1}
+.sidefoot{padding:12px;font-size:11.5px;color:var(--faint);line-height:1.5}
+.side.rail .sidefoot{display:none}
